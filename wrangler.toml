@@ -1,0 +1,22 @@
+name = "precision-roof"
+compatibility_date = "2026-08-01"
+compatibility_flags = ["nodejs_compat"]
+# Deployed as a Cloudflare Worker via @astrojs/cloudflare (Workers static-assets
+# model, not Pages — the adapter reserves the ASSETS binding). Do NOT set
+# pages_build_output_dir here or wrangler treats it as a Pages project.
+
+# Operational store — Cloudflare D1 (spec §1.2, §2.5).
+# Create the database once (pre-flight) and paste the returned id below:
+#   npx wrangler d1 create precision-roof-op
+# Migrations live in ./migrations (Phase 02 authors the schema).
+[[d1_databases]]
+binding = "OP_STORE"
+database_name = "precision-roof-op"
+database_id = "TODO_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+# Durable Object for the per-phone/budget/suppression authority (spec §3.1)
+# is declared in Phase 05b, not here.
+
+# KV / R2 / Queues bindings are added by the phases that introduce them
+# (pricing blob, backups, async SMS dispatch).

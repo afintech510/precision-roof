@@ -1,0 +1,37 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# build output
+dist/
+.astro/
+.output/
+.vercel/
+.netlify/
+
+# cloudflare / wrangler
+.wrangler/
+.dev.vars
+
+# test artifacts
+.vitest.json
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# env / secrets — never commit real vendor keys
+.env
+.env.*
+!.env.example
+
+# sanity
+sanity/dist/
+
+# logs / os
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+build-prompter.zip

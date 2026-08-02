@@ -1,0 +1,3 @@
+# D1 migrations directory. Phase 02 authors the operational-store schema here
+# (SQLite-native types: TEXT ids, integer epoch-ms timestamps, INTEGER 0/1
+# booleans, enums as TEXT + CHECK). See spec §2.5.

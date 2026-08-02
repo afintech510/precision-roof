@@ -1,0 +1,40 @@
+{
+  "name": "precision-roof",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Suffolk County residential roofing website — Astro + Sanity + Cloudflare",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check && tsc --noEmit",
+    "lint": "eslint .",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/cloudflare": "^14.1.7",
+    "@sanity/client": "^7.26.0",
+    "astro": "^7.1.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260801.1",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.1.2",
+    "@vitest/coverage-v8": "^4.1.10",
+    "astro-eslint-parser": "^3.0.0",
+    "eslint": "^10.8.0",
+    "eslint-plugin-astro": "^3.1.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.118.0"
+  }
+}
