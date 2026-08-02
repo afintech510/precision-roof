@@ -4,6 +4,6 @@
 // siteSettings). Kept dependency-free here so the Phase 00 scaffold stays lean.
 // Excluded from tsc (see tsconfig "exclude").
 export const sanityProject = {
-  projectId: process.env.SANITY_PROJECT_ID ?? 'placeholder',
+  projectId: process.env.SANITY_PROJECT_ID ?? 'af66eilq',
   dataset: process.env.SANITY_DATASET ?? 'production',
 } as const;
