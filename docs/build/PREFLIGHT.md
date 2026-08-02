@@ -50,6 +50,22 @@ npx playwright test --reporter=json
 
 Full template with placeholders: `.env.example`. Never commit filled-in secrets — Doppler (dev) + Cloudflare secrets are the runtime sources.
 
+## Secrets management (decided 2026-08-02)
+
+**Doppler = source of truth for dev/CI. Cloudflare Pages = runtime.** Doppler is not in the edge request path, so the Worker reads secrets from Cloudflare bindings, not Doppler.
+
+Three buckets:
+- **Runtime secrets → Cloudflare Pages secrets** (Worker reads per request): `SANITY_API_TOKEN`, `TWILIO_*`, `TURNSTILE_SECRET_KEY`, `GA4_API_SECRET`, `CALCOM_*`, `CALLRAIL_*`, `FINANCING_API_KEY`/`FINANCING_PARTNER_ID`, `POSTMARK_SERVER_TOKEN`/`AWS_SES_*`, `CF_ACCESS_AUD`, `GBP_CLIENT_SECRET`/`GBP_REFRESH_TOKEN`.
+- **Build/CLI creds → Doppler / CI only** (never shipped to the edge): `CLOUDFLARE_API_TOKEN`.
+- **Not secret → committed config / plain env**: `D1 database_id`, `CLOUDFLARE_ACCOUNT_ID` (wrangler.toml); `GA4_MEASUREMENT_ID`, `TURNSTILE_SITE_KEY`, `SANITY_PROJECT_ID`/`DATASET`, `FINANCING_PARTNER`, `CF_ACCESS_TEAM_DOMAIN` (plain).
+
+**Pushing Doppler → Pages** (Adam runs; prod-gated):
+1. *Recommended* — Doppler dashboard → Integrations → **Cloudflare Pages** → CF token (`Pages: Edit`) → project `precision-roof`, env Production (repeat Preview) → sync only the runtime subset. Auto-syncs on change.
+2. *Immediate, per key* — `npx wrangler pages secret put <KEY> --project-name precision-roof` (paste value).
+3. *Batch* — `doppler login && doppler setup`, then `npm run secrets:push` (helper filters to the runtime subset, temp-file only, no repo/disk residue; `scripts/push-runtime-secrets.mjs`). Preview-env secrets: set in dashboard (wrangler targets production).
+
+**Local dev** — `doppler run -- npm run dev:cf` (Doppler-injected), or drop runtime secrets in `.dev.vars` (gitignored) for `wrangler pages dev`.
+
 ## Remaining manual pre-flight commands (run once keys land)
 ```
 # Cloudflare

@@ -12,7 +12,9 @@
     "typecheck": "astro check && tsc --noEmit",
     "lint": "eslint .",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "dev:cf": "wrangler pages dev dist/client",
+    "secrets:push": "node scripts/push-runtime-secrets.mjs"
   },
   "engines": {
     "node": ">=20"

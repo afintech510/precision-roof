@@ -23,4 +23,11 @@ export default [
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     },
   },
+  {
+    // Node scripts (build/ops helpers) run in Node, not the browser.
+    files: ['scripts/**/*.{mjs,js}'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly' },
+    },
+  },
 ];
