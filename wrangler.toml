@@ -12,7 +12,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "OP_STORE"
 database_name = "precision-roof-op"
-database_id = "TODO_D1_DATABASE_ID"
+database_id = "1a4c5b80-adda-42f9-8231-0ac1398c7f7d"
 migrations_dir = "migrations"
 
 # Durable Object for the per-phone/budget/suppression authority (spec §3.1)
