@@ -66,4 +66,15 @@ queue = "sms-dispatch"
 max_batch_size = 10
 max_retries = 3
 
+# Public-endpoint rate-limit hardening (spec §3.3, §8, Phase 08 Task 2) —
+# src/server/rate-limit.ts + wiring in /api/quote and /api/lead. Not yet
+# provisioned (prod/remote mutation, gated on Adam): create once —
+#   npx wrangler kv namespace create RATE_LIMIT_KV
+# then paste the returned id below and uncomment. Until then the routes see
+# `env.RATE_LIMIT_KV` as undefined and skip rate limiting (never fail closed).
+#
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "PASTE_ID_HERE"
+
 # R2 is added by the phase that introduces it.

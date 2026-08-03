@@ -6,6 +6,7 @@ import { handleLeadIntake, type LeadIntakeRequest } from '../../server/lead-inta
 import type { ReserveOutcome } from '../../server/sms-authority';
 import type { SmsDispatchMessage } from '../../server/sms-dispatch';
 import { verifyTurnstile } from '../../server/turnstile';
+import { checkRateLimit, rateLimitKey } from '../../server/rate-limit';
 import { json } from '../../server/http';
 
 // POST /api/lead (spec §3.2, F-009/F-012). Thin adapter over the pure
@@ -27,8 +28,20 @@ async function parseBody(request: Request): Promise<LeadBody> {
   }
 }
 
+// Tighter than /api/quote (spec §3.3 hardening): this endpoint triggers a D1
+// write + downstream SMS spend, not just a read, so 5 requests/min/IP.
+const RATE_LIMIT = { windowMs: 60_000, max: 5 };
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
   if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
+
+  if (env.RATE_LIMIT_KV) {
+    const rl = await checkRateLimit(env.RATE_LIMIT_KV, rateLimitKey('lead', clientAddress), {
+      ...RATE_LIMIT,
+      now: Date.now(),
+    });
+    if (!rl.allowed) return json({ error: 'rate_limited', retryAt: rl.resetAt }, 429);
+  }
 
   const body = await parseBody(request);
   const turnstile = await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstileToken, clientAddress);

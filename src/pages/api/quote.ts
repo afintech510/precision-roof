@@ -4,6 +4,7 @@ import { computeQuote, type QuoteRequest } from '../../server/quote';
 import { readPricingBlob, buildPricingBlob } from '../../server/pricing-blob';
 import { getQuoteTowns, getPricingRows } from '../../lib/content';
 import { verifyTurnstile } from '../../server/turnstile';
+import { checkRateLimit, rateLimitKey } from '../../server/rate-limit';
 import { json } from '../../server/http';
 
 // POST /api/quote (spec §3.2, F-014). Thin adapter over the pure quote engine:
@@ -32,7 +33,19 @@ async function parseBody(request: Request): Promise<QuoteBody> {
   }
 }
 
+// Generous cap (spec §3.3 hardening, never fails closed on a legitimate
+// burst — e.g. someone tabbing through town/size combos): 20 requests/min/IP.
+const RATE_LIMIT = { windowMs: 60_000, max: 20 };
+
 export const POST: APIRoute = async ({ request, clientAddress }) => {
+  if (env.RATE_LIMIT_KV) {
+    const rl = await checkRateLimit(env.RATE_LIMIT_KV, rateLimitKey('quote', clientAddress), {
+      ...RATE_LIMIT,
+      now: Date.now(),
+    });
+    if (!rl.allowed) return json({ error: 'rate_limited', retryAt: rl.resetAt }, 429);
+  }
+
   const body = await parseBody(request);
 
   const turnstile = await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstileToken, clientAddress);

@@ -53,4 +53,33 @@ describe('POST /api/quote', () => {
     const res = await GET({} as never);
     expect(res.status).toBe(405);
   });
+
+  it('429s past the per-IP cap once RATE_LIMIT_KV is bound', async () => {
+    const data = new Map<string, string>();
+    const kv = {
+      get: async (key: string) => data.get(key) ?? null,
+      put: async (key: string, value: string) => {
+        data.set(key, value);
+      },
+    };
+    for (let i = 0; i < 20; i++) {
+      __setEnv({ RATE_LIMIT_KV: kv });
+      const request = new Request('https://premiumroofsolutions.com/api/quote', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ townSlug: 'huntington', band: 'medium' }),
+      });
+      const res = await POST({ request, clientAddress: '203.0.113.9' } as never);
+      expect(res.status).toBe(200);
+    }
+    __setEnv({ RATE_LIMIT_KV: kv });
+    const request = new Request('https://premiumroofsolutions.com/api/quote', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ townSlug: 'huntington', band: 'medium' }),
+    });
+    const res = await POST({ request, clientAddress: '203.0.113.9' } as never);
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { error: string }).error).toBe('rate_limited');
+  });
 });

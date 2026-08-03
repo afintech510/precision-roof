@@ -62,6 +62,16 @@ function fakeSmsQueue(sink: SmsDispatchMessage[]) {
   return { send: async (msg: SmsDispatchMessage) => { sink.push(msg); } };
 }
 
+function fakeKv() {
+  const data = new Map<string, string>();
+  return {
+    get: async (key: string) => data.get(key) ?? null,
+    put: async (key: string, value: string) => {
+      data.set(key, value);
+    },
+  };
+}
+
 const ROUTE_URL = 'https://premiumroofsolutions.com/api/lead';
 
 let db: InstanceType<typeof DatabaseSync>;
@@ -158,5 +168,25 @@ describe('POST /api/lead', () => {
   it('rejects GET', async () => {
     const res = await GET({} as never);
     expect(res.status).toBe(405);
+  });
+
+  it('is not rate-limited when RATE_LIMIT_KV is unbound (never fails closed on missing infra)', async () => {
+    for (let i = 0; i < 6; i++) {
+      const res = await POST(req(validBody({ phoneE164: `+1516555010${i}` })));
+      expect(res.status).toBe(201);
+    }
+  });
+
+  it('429s past the per-IP cap once RATE_LIMIT_KV is bound', async () => {
+    env.RATE_LIMIT_KV = fakeKv();
+    for (let i = 0; i < 5; i++) {
+      const res = await POST(req(validBody({ phoneE164: `+1516555010${i}` })));
+      expect(res.status).toBe(201);
+    }
+    const res = await POST(req(validBody({ phoneE164: '+15165550199' })));
+    expect(res.status).toBe(429);
+    const out = (await res.json()) as { error: string };
+    expect(out.error).toBe('rate_limited');
+    expect(sent).toHaveLength(5); // the 6th request never reached the send path
   });
 });

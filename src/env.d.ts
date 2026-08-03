@@ -16,6 +16,10 @@ declare global {
       OP_STORE: D1Database;
       PRICING_KV?: KVNamespace;
       SESSION?: KVNamespace;
+      // Phase 08 — public-endpoint rate-limit hardening (spec §3.3). Not yet
+      // provisioned (see wrangler.toml) — routes must treat this as always
+      // possibly absent and never fail closed when it's missing.
+      RATE_LIMIT_KV?: KVNamespace;
       // Phase 05b — per-phone/budget/suppression concurrency authority (spec §3.1).
       SMS_AUTHORITY?: DurableObjectNamespace<SmsAuthorityDO>;
       // Phase 05b — async speed-to-lead SMS dispatch (spec §3.1).
