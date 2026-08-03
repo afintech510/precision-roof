@@ -15,8 +15,16 @@ database_name = "precision-roof-op"
 database_id = "1a4c5b80-adda-42f9-8231-0ac1398c7f7d"
 migrations_dir = "migrations"
 
-# Durable Object for the per-phone/budget/suppression authority (spec §3.1)
-# is declared in Phase 05b, not here.
+# Durable Object for the per-phone/budget/suppression authority (spec §3.1,
+# §1.2, [C2-003, C2-004, C2-033]) — the pure reservation core + thin DO class
+# are built (src/server/lead-authority.ts, lead-authority-do.ts, unit-tested),
+# but the `[[durable_objects.bindings]]` / `[[migrations]]` entries are NOT
+# added here yet: the @astrojs/cloudflare adapter's generated Worker entry has
+# no built-in mechanism to re-export a custom DO class (or a `queue()`
+# handler) alongside the Astro app, so binding it is a deploy-model decision
+# (same shape as PROPOSAL-api-wiring.md's Option A/B), deferred to the
+# increment that adds the Queue dispatch + `/api/lead` route so both the DO
+# and the Queue's entry-export needs get decided together.
 
 # Pricing-blob cache — Cloudflare KV (spec §3.2 [C2-023]). /api/webhooks/sanity-
 # publish materializes the blob here; /api/quote reads it (and falls back to an
