@@ -1,0 +1,103 @@
+/* Precision Roofing — design system. Transparency-forward, local, credible.
+   No external fonts (perf budget, SOW §7); system stack with tabular numerals. */
+
+:root {
+  --ink: #0c1a29;
+  --brand: #143b5e;
+  --brand-700: #0f2c47;
+  --accent: #e07b2c;      /* copper — warmth, roofs, primary CTA */
+  --accent-700: #c1651c;
+  --emergency: #c62839;   /* urgent click-to-call */
+  --sand: #f5f1ea;        /* warm section background */
+  --paper: #ffffff;
+  --line: #e6ded2;
+  --muted: #5b6b79;
+  --text: #1d2a35;
+  --good: #1c7a4d;
+  --star: #e0a52c;
+
+  --container: 1120px;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(12, 26, 41, .06), 0 8px 24px rgba(12, 26, 41, .07);
+  --shadow-lg: 0 24px 60px rgba(12, 26, 41, .16);
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--paper);
+  line-height: 1.6;
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+h1, h2, h3 { line-height: 1.1; color: var(--ink); letter-spacing: -0.02em; font-weight: 800; }
+h1 { font-size: clamp(2.1rem, 1.2rem + 3.6vw, 3.7rem); }
+h2 { font-size: clamp(1.7rem, 1.1rem + 2.4vw, 2.55rem); }
+h3 { font-size: 1.22rem; letter-spacing: -0.01em; }
+p { color: var(--text); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.container { width: 100%; max-width: var(--container); margin-inline: auto; padding-inline: clamp(18px, 4vw, 34px); }
+.section { padding-block: clamp(48px, 6vw, 92px); }
+.section--sand { background: var(--sand); }
+.section--ink { background: var(--ink); color: #dfe7ee; }
+.section--ink h2, .section--ink h3 { color: #fff; }
+
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--accent-700);
+}
+.section--ink .eyebrow { color: #f0a559; }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 60ch; }
+.section--ink .lede { color: #aebccb; }
+.muted { color: var(--muted); }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  font-weight: 700; font-size: 1rem; line-height: 1;
+  padding: 15px 22px; border-radius: 999px; border: 1.5px solid transparent;
+  cursor: pointer; transition: transform .06s ease, background .15s ease, box-shadow .15s ease;
+  min-height: 48px; /* WCAG 2.2 target size */
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(224, 123, 44, .32); }
+.btn-primary:hover { background: var(--accent-700); }
+.btn-emergency { background: var(--emergency); color: #fff; box-shadow: 0 6px 16px rgba(198, 40, 57, .3); }
+.btn-emergency:hover { filter: brightness(1.06); }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-ghost:hover { border-color: var(--brand); color: var(--brand); }
+.btn-onink { background: #fff; color: var(--ink); }
+.btn-onink:hover { background: #eef3f8; }
+
+/* Chips & cards */
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 13px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+  background: rgba(28, 122, 77, .1); color: var(--good); border: 1px solid rgba(28, 122, 77, .2);
+}
+.card {
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 22px; box-shadow: var(--shadow);
+}
+.grid { display: grid; gap: 20px; }
+@media (min-width: 640px) { .grid-2 { grid-template-columns: repeat(2, 1fr); } .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .grid-4 { grid-template-columns: repeat(4, 1fr); } }
+
+.stars { color: var(--star); letter-spacing: 2px; font-size: 1rem; }
+.skip-link {
+  position: absolute; left: 12px; top: -60px; background: var(--ink); color: #fff;
+  padding: 10px 16px; border-radius: 8px; z-index: 100; transition: top .15s;
+}
+.skip-link:focus { top: 12px; }

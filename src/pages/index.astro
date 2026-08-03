@@ -1,21 +1,206 @@
 ---
-// Phase 00 placeholder home page. Phase 04 builds the real transparency-wedge
-// home page (spec §4.4). This exists only so `astro build` produces output and
-// the standing gate is green from Phase 00 onward.
-const title = 'Suffolk County Roofing — coming soon';
----
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSite, getServices, getTowns, getTownNames, getReviews, formatUsd } from '../lib/content';
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-  </head>
-  <body>
-    <main>
-      <h1>{title}</h1>
-      <p>Project scaffold is live. Feature phases follow the build plan.</p>
-    </main>
-  </body>
-</html>
+const site = await getSite();
+const services = await getServices();
+const towns = await getTowns();
+const townNames = await getTownNames();
+const reviews = await getReviews();
+const emergency = services.filter((s) => s.isEmergencyCluster);
+const detailedSlugs = new Set(towns.map((t) => t.slug));
+const heroPricing = towns[0].pricing;
+---
+<BaseLayout title={`${site.businessName} — Transparent Suffolk County Roofing`}>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow">Suffolk County, NY · Licensed &amp; insured</span>
+        <h1>The roofer that shows you the price <span class="hl">before</span> the pitch.</h1>
+        <p class="lede">Itemized, town-by-town pricing. A real license number you can verify. Honest, documented inspections across 12 Suffolk towns — no high-pressure “today only” games.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+          <a class="btn btn-ghost" href={site.phoneHref}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012 4.2 2 2 0 014 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8 9.6a16 16 0 006 6l1.2-1.1a2 2 0 012.1-.5c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg>
+            <span class="tnum">{site.phone}</span>
+          </a>
+        </div>
+        <div class="hero-trust">
+          <span class="chip">✓ {site.licenseNumber}</span>
+          <span class="muted">Fully insured · Free inspections · NY §771-B compliant</span>
+        </div>
+      </div>
+
+      <aside class="price-card" aria-label="Sample town pricing">
+        <div class="price-head">
+          <span class="eyebrow">Real pricing · Huntington</span>
+          <h3>Roof replacement</h3>
+          <p class="muted">Published ranges by home size — what we quote is what you pay.</p>
+        </div>
+        <ul class="price-rows">
+          {heroPricing.map((b) => (
+            <li>
+              <span class="pb">{b.bandLabel}</span>
+              <span class="pv tnum">{formatUsd(b.low)}–{formatUsd(b.high)}</span>
+            </li>
+          ))}
+        </ul>
+        <a class="price-link" href="/areas/huntington/">See Huntington details →</a>
+      </aside>
+    </div>
+  </section>
+
+  <!-- TRUST BAR -->
+  <section class="trust">
+    <div class="container trust-grid">
+      <div><strong>12</strong><span>Suffolk towns, deeply researched</span></div>
+      <div><strong>§771-B</strong><span>Compliant financing &amp; claims</span></div>
+      <div><strong>0</strong><span>Surprise line items — itemized upfront</span></div>
+      <div><strong>Free</strong><span>Documented, photo-backed inspections</span></div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="section">
+    <div class="container">
+      <span class="eyebrow">What we do</span>
+      <h2>Roofing services across Suffolk</h2>
+      <p class="lede">From a same-week emergency tarp to a full standing-seam metal roof — priced honestly, done right.</p>
+      <div class="grid grid-2 grid-4 svc-grid">
+        {services.map((s) => (
+          <a class="svc card" href={`/services/${s.slug}/`}>
+            <span class={`svc-ic ${s.isEmergencyCluster ? 'urgent' : ''}`} aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d={s.icon}/></svg>
+            </span>
+            <h3>{s.name}</h3>
+            <p class="muted">{s.summary}</p>
+            {s.isEmergencyCluster && <span class="urgent-tag">Emergency</span>}
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- EMERGENCY STRIP -->
+  <section class="emergency">
+    <div class="container em-grid">
+      <div>
+        <span class="eyebrow em-eye">Storm, leak or active failure?</span>
+        <h2>We’ll book a free inspection fast — and tarp it to stop the damage.</h2>
+        <p>No time-bound promises we can’t keep. Just a real crew, a documented assessment, and honest next steps.</p>
+      </div>
+      <div class="em-cta">
+        <a class="btn btn-emergency" href={site.phoneHref}>Call {site.phone}</a>
+        <div class="em-services">
+          {emergency.map((s) => <a href={`/services/${s.slug}/`}>{s.name}</a>)}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICE AREAS -->
+  <section class="section section--sand">
+    <div class="container">
+      <span class="eyebrow">Where we work</span>
+      <h2>Deep local knowledge, town by town</h2>
+      <p class="lede">Building-department details, permit timelines, historic districts and the housing stock on your block — not a name-swapped template.</p>
+      <div class="towns">
+        {townNames.map((name) => {
+          const slug = name.toLowerCase().replace(/\s+/g, '-');
+          const linked = detailedSlugs.has(slug);
+          return linked
+            ? <a class="town linked" href={`/areas/${slug}/`}>{name} <span aria-hidden="true">→</span></a>
+            : <span class="town">{name}</span>;
+        })}
+      </div>
+    </div>
+  </section>
+
+  <!-- REVIEWS -->
+  <section class="section">
+    <div class="container">
+      <span class="eyebrow">What neighbors say</span>
+      <h2>Reviews from real Suffolk jobs</h2>
+      <div class="grid grid-3 rev-grid">
+        {reviews.map((r) => (
+          <figure class="card rev">
+            <div class="stars" aria-label={`${r.rating} out of 5`}>{'★'.repeat(r.rating)}</div>
+            <blockquote>“{r.text}”</blockquote>
+            <figcaption>{r.authorName}{r.town && <span class="muted"> · {r.town}</span>}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="section section--ink">
+    <div class="container cta">
+      <div>
+        <h2>Ready for a straight answer on your roof?</h2>
+        <p class="lede">Book a free, no-pressure inspection. You’ll get a documented assessment and itemized pricing — in writing.</p>
+      </div>
+      <div class="cta-btns">
+        <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+        <a class="btn btn-onink" href={site.phoneHref}>{site.phone}</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero { background: radial-gradient(120% 120% at 85% -10%, #eaf1f7 0%, #fff 55%); border-bottom: 1px solid var(--line); }
+  .hero-grid { display: grid; gap: 40px; align-items: center; padding-block: clamp(44px, 6vw, 84px); }
+  .hero-copy h1 { margin: 14px 0 16px; }
+  .hl { color: var(--accent); }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 26px 0 18px; }
+  .hero-trust { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: .92rem; }
+
+  .price-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow-lg); padding: 24px; }
+  .price-head h3 { margin: 6px 0 4px; }
+  .price-rows { list-style: none; padding: 0; margin: 18px 0 16px; }
+  .price-rows li { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 13px 0; border-top: 1px dashed var(--line); }
+  .price-rows .pb { color: var(--muted); font-size: .93rem; }
+  .price-rows .pv { font-weight: 800; color: var(--ink); font-size: 1.05rem; }
+  .price-link { color: var(--brand); font-weight: 700; }
+  @media (min-width: 940px) { .hero-grid { grid-template-columns: 1.15fr .85fr; } }
+
+  .trust { background: var(--brand); color: #fff; }
+  .trust-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; padding-block: 26px; }
+  .trust-grid div { display: flex; flex-direction: column; }
+  .trust-grid strong { font-size: 1.5rem; color: #fff; letter-spacing: -.02em; }
+  .trust-grid span { color: #c7d8e6; font-size: .9rem; }
+  @media (min-width: 820px) { .trust-grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .svc-grid { margin-top: 28px; }
+  .svc { display: flex; flex-direction: column; position: relative; transition: transform .1s ease, box-shadow .15s ease, border-color .15s; }
+  .svc:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: #d8cdbb; }
+  .svc-ic { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: #eef2f6; color: var(--brand); margin-bottom: 14px; }
+  .svc-ic.urgent { background: #fdeceD; color: var(--emergency); }
+  .svc h3 { margin-bottom: 6px; }
+  .svc p { font-size: .93rem; }
+  .urgent-tag { position: absolute; top: 16px; right: 16px; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--emergency); background: #fdecee; padding: 4px 9px; border-radius: 999px; }
+
+  .emergency { background: linear-gradient(180deg, #10263a, var(--ink)); color: #dbe6f0; }
+  .em-grid { display: grid; gap: 26px; padding-block: clamp(40px, 5vw, 66px); align-items: center; }
+  .emergency h2 { color: #fff; margin: 10px 0; }
+  .em-eye { color: #f0a559; }
+  .em-cta { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+  .em-services { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .em-services a { color: #9fd3b6; font-weight: 600; font-size: .92rem; }
+  @media (min-width: 860px) { .em-grid { grid-template-columns: 1.4fr .9fr; } }
+
+  .towns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+  .town { padding: 11px 16px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-weight: 600; font-size: .95rem; color: var(--muted); }
+  .town.linked { color: var(--brand); border-color: #cfdae4; }
+  .town.linked:hover { background: var(--brand); color: #fff; border-color: var(--brand); }
+
+  .rev-grid { margin-top: 26px; }
+  .rev blockquote { margin: 10px 0 14px; color: var(--text); font-size: 1.02rem; }
+  .rev figcaption { font-weight: 700; color: var(--ink); }
+
+  .cta { display: grid; gap: 22px; align-items: center; }
+  .cta-btns { display: flex; flex-wrap: wrap; gap: 12px; }
+  @media (min-width: 820px) { .cta { grid-template-columns: 1.5fr 1fr; } }
+</style>

@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getReviews, getSite } from '../lib/content';
+const reviews = await getReviews();
+const site = await getSite();
+const avg = (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1);
+---
+<BaseLayout title={`Reviews — ${site.businessName}`} description="Reviews from real Suffolk County roofing jobs.">
+  <section class="section">
+    <div class="container">
+      <span class="eyebrow">Reviews</span>
+      <h1>What Suffolk neighbors say</h1>
+      <p class="lede"><span class="stars">★★★★★</span> <strong class="tnum">{avg}</strong> average · every review from a real, completed job. We ask 100% of customers — no cherry-picking.</p>
+      <div class="grid grid-3 rev-grid">
+        {reviews.map((r) => (
+          <figure class="card rev">
+            <div class="stars" aria-label={`${r.rating} out of 5`}>{'★'.repeat(r.rating)}</div>
+            <blockquote>“{r.text}”</blockquote>
+            <figcaption>{r.authorName}{r.town && <span class="muted"> · {r.town}</span>}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  h1 { margin: 12px 0 12px; }
+  .rev-grid { margin-top: 26px; }
+  .rev blockquote { margin: 10px 0 14px; font-size: 1.02rem; }
+  .rev figcaption { font-weight: 700; color: var(--ink); }
+</style>

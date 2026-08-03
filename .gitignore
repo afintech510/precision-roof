@@ -30,6 +30,9 @@ blob-report/
 # sanity
 sanity/dist/
 
+# editor transcript artifacts (screenshots)
+.nimbalyst/
+
 # logs / os
 *.log
 npm-debug.log*

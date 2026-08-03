@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getServices } from '../../lib/content';
+const services = await getServices();
+---
+<BaseLayout title="Roofing Services — Suffolk County" description="Replacement, repair, emergency, storm, leak, flat, metal and inspection — priced honestly across Suffolk County.">
+  <section class="section">
+    <div class="container">
+      <span class="eyebrow">What we do</span>
+      <h2>Roofing services across Suffolk County</h2>
+      <p class="lede">Every service is priced with itemized, town-level ranges — and backed by a verifiable license.</p>
+      <div class="grid grid-2 grid-4 sgrid">
+        {services.map((s) => (
+          <a class="svc card" href={`/services/${s.slug}/`}>
+            <span class={`svc-ic ${s.isEmergencyCluster ? 'urgent' : ''}`} aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d={s.icon}/></svg>
+            </span>
+            <h3>{s.name}</h3>
+            <p class="muted">{s.summary}</p>
+            {s.isEmergencyCluster && <span class="urgent-tag">Emergency</span>}
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .sgrid { margin-top: 26px; }
+  .svc { display: flex; flex-direction: column; position: relative; transition: transform .1s, box-shadow .15s, border-color .15s; }
+  .svc:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: #d8cdbb; }
+  .svc-ic { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: #eef2f6; color: var(--brand); margin-bottom: 14px; }
+  .svc-ic.urgent { background: #fdecee; color: var(--emergency); }
+  .svc h3 { margin-bottom: 6px; }
+  .svc p { font-size: .93rem; }
+  .urgent-tag { position: absolute; top: 16px; right: 16px; font-size: .68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--emergency); background: #fdecee; padding: 4px 9px; border-radius: 999px; }
+</style>

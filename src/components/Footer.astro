@@ -1,0 +1,54 @@
+---
+import type { SiteSettings } from '../lib/types';
+interface Props { site: SiteSettings }
+const { site } = Astro.props;
+const year = 2026;
+---
+<footer class="site-footer">
+  <div class="container cols">
+    <div class="about">
+      <strong>{site.businessName}</strong>
+      <p class="muted">{site.addressLine}</p>
+      <p class="lic tnum">{site.licenseNumber}</p>
+      {site.dcaVerifyUrl && <a class="verify" href={site.dcaVerifyUrl} rel="nofollow">Verify our license →</a>}
+    </div>
+    <div>
+      <h4>Services</h4>
+      <a href="/services/roof-replacement/">Roof Replacement</a>
+      <a href="/services/roof-repair/">Roof Repair</a>
+      <a href="/services/storm-damage-roof-repair/">Storm Damage</a>
+      <a href="/services/roof-inspection/">Roof Inspection</a>
+    </div>
+    <div>
+      <h4>Company</h4>
+      <a href="/about/">About</a>
+      <a href="/reviews/">Reviews</a>
+      <a href="/financing/">Financing</a>
+      <a href="/accessibility/">Accessibility</a>
+    </div>
+    <div class="contact">
+      <h4>Get in touch</h4>
+      <a class="phone tnum" href={site.phoneHref}>{site.phone}</a>
+      <a class="btn btn-onink book" href="/contact/">Book a free inspection</a>
+    </div>
+  </div>
+  <div class="container legal">
+    <span>© {year} {site.businessName}. Licensed &amp; insured in Suffolk County, NY.</span>
+    <span class="muted">Estimates are non-binding. Financing &amp; insurance claims compliant with NY GBL §771-B.</span>
+  </div>
+</footer>
+
+<style>
+  .site-footer { background: var(--ink); color: #b9c6d3; padding-block: 54px 26px; }
+  .cols { display: grid; gap: 30px; grid-template-columns: 1fr; }
+  .cols h4 { color: #fff; font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+  .cols a { display: block; color: #b9c6d3; padding: 4px 0; font-size: .95rem; }
+  .cols a:hover { color: #fff; }
+  .about strong { color: #fff; font-size: 1.1rem; display: block; margin-bottom: 6px; }
+  .about .lic { color: #f0a559; font-size: .85rem; margin-top: 6px; }
+  .about .verify { color: #9fd3b6; margin-top: 8px; }
+  .contact .phone { color: #fff; font-size: 1.35rem; font-weight: 800; margin-bottom: 12px; }
+  .book { margin-top: 4px; }
+  .legal { display: flex; flex-wrap: wrap; gap: 6px 20px; justify-content: space-between; margin-top: 34px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,.12); font-size: .82rem; }
+  @media (min-width: 680px) { .cols { grid-template-columns: 2fr 1fr 1fr 1.4fr; } }
+</style>

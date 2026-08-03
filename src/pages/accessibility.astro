@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSite } from '../lib/content';
+const site = await getSite();
+---
+<BaseLayout title={`Accessibility — ${site.businessName}`} description="Our WCAG 2.2 AA accessibility commitment and how to reach us about access barriers.">
+  <section class="section">
+    <div class="container narrow">
+      <span class="eyebrow">Accessibility</span>
+      <h1>Accessibility statement</h1>
+      <p class="lede">We want every Suffolk homeowner to be able to use this site, regardless of ability.</p>
+      <h3>Conformance target</h3>
+      <p>We aim to meet <strong>WCAG 2.2 Level AA</strong>. We test with automated tooling and a manual keyboard/screen-reader pass, and we treat accessibility as a launch requirement, not an afterthought.</p>
+      <h3>Known limitations</h3>
+      <p>This site is under active development; some pages and interactive components are still being brought to full AA conformance and verified. If you hit a barrier, we want to hear about it.</p>
+      <h3>Contact us about access</h3>
+      <p>Call <a class="tnum" href={site.phoneHref}>{site.phone}</a> and tell us what you needed and where — we’ll help directly and fix the issue.</p>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .narrow { max-width: 720px; }
+  h1 { margin: 12px 0 14px; }
+  h3 { margin: 24px 0 6px; }
+  p { margin-bottom: 12px; }
+  a.tnum { color: var(--brand); font-weight: 700; }
+</style>

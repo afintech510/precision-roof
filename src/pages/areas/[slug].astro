@@ -1,0 +1,128 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getTowns, getSite, formatUsd } from '../../lib/content';
+import type { TownFull } from '../../lib/types';
+
+export async function getStaticPaths() {
+  const towns = await getTowns();
+  return towns.map((town) => ({ params: { slug: town.slug }, props: { town } }));
+}
+
+interface Props { town: TownFull }
+const { town } = Astro.props;
+const site = await getSite();
+const d = town.depth;
+---
+<BaseLayout title={`Roofing in ${town.name}, NY — ${site.businessName}`} description={town.blurb}>
+  <nav class="crumbs container" aria-label="Breadcrumb">
+    <a href="/">Home</a> <span aria-hidden="true">/</span>
+    <a href="/areas/">Service Areas</a> <span aria-hidden="true">/</span>
+    <span>{town.name}</span>
+  </nav>
+
+  <section class="thero container">
+    <div class="thero-copy">
+      <span class="eyebrow">Roofing in {town.name}, NY</span>
+      <h1>{town.name} roofing, priced for your block.</h1>
+      <p class="lede">{town.blurb}</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+        <a class="btn btn-ghost tnum" href={site.phoneHref}>{site.phone}</a>
+      </div>
+      <p class="lic tnum">✓ {site.licenseNumber} · Fully insured</p>
+    </div>
+    <aside class="tprice card">
+      <span class="eyebrow">Roof replacement · {town.name}</span>
+      <ul>
+        {town.pricing.map((b) => (
+          <li><span class="muted">{b.bandLabel}</span><span class="tnum pv">{formatUsd(b.low)}–{formatUsd(b.high)}</span></li>
+        ))}
+      </ul>
+      <p class="disc muted">Ranges reflect {town.name} home sizes. Your written quote is itemized and non-binding until you approve it.</p>
+    </aside>
+  </section>
+
+  <section class="section section--sand">
+    <div class="container">
+      <span class="eyebrow">Local specifics</span>
+      <h2>What we know about roofing in {town.name}</h2>
+      <div class="grid grid-2 dgrid">
+        <div class="card"><h3>Building department</h3>
+          <p>{d.buildingDepartment.streetAddress}</p>
+          <p class="muted tnum">{d.buildingDepartment.phone} · {d.buildingDepartment.counterHours}</p>
+          <p class="muted">Filing: {d.buildingDepartment.filingMethod}</p>
+        </div>
+        <div class="card"><h3>Re-roof permit</h3>
+          <p>{d.permit.requiredForReroof ? 'Required for a re-roof.' : 'Not required for a re-roof.'}</p>
+          <p class="muted">Fee: {d.permit.fee} · ~{d.permit.turnaroundBusinessDays} business days</p>
+        </div>
+        <div class="card"><h3>Historic district</h3>
+          <p>{d.historicOverlay.applies ? d.historicOverlay.details : 'No historic overlay affects roof work in this town.'}</p>
+        </div>
+        <div class="card"><h3>Housing stock</h3>
+          <p>{d.housingStock.era} {d.housingStock.type}.</p>
+          <p class="muted">Typical roof ≈ {d.housingStock.typicalRoofSquares} squares.</p>
+        </div>
+      </div>
+
+      <div class="grid grid-3 chipgrid">
+        <div><h4>Local conditions</h4><ul>{d.localConditions.map((c) => <li>{c}</li>)}</ul></div>
+        <div><h4>Neighborhoods</h4><ul>{d.hamlets.map((h) => <li>{h}</li>)}</ul></div>
+        <div><h4>Landmarks &amp; streets</h4><ul>{[...d.landmarks, ...d.namedStreets.slice(0, 2)].map((x) => <li>{x}</li>)}</ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container narrow">
+      <span class="eyebrow">Questions</span>
+      <h2>{town.name} roofing FAQs</h2>
+      <div class="faqs">
+        {town.faqs.map((f) => (
+          <details class="faq">
+            <summary>{f.question}</summary>
+            <p>{f.answer}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--ink">
+    <div class="container cta">
+      <h2>Get a straight answer on your {town.name} roof</h2>
+      <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  .crumbs { padding-top: 20px; font-size: .88rem; color: var(--muted); display: flex; gap: 8px; }
+  .crumbs a:hover { color: var(--brand); }
+  .thero { display: grid; gap: 34px; padding-block: clamp(30px, 4vw, 54px); align-items: start; }
+  .thero-copy h1 { margin: 12px 0 14px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 22px 0 14px; }
+  .lic { color: var(--good); font-weight: 700; font-size: .9rem; }
+  .tprice ul { list-style: none; padding: 0; margin: 14px 0; }
+  .tprice li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px dashed var(--line); }
+  .tprice .pv { font-weight: 800; color: var(--ink); }
+  .tprice .disc { font-size: .82rem; margin-top: 8px; }
+  @media (min-width: 900px) { .thero { grid-template-columns: 1.3fr .7fr; } }
+
+  .dgrid { margin-top: 24px; }
+  .dgrid h3 { margin-bottom: 8px; }
+  .dgrid p { font-size: .95rem; margin-bottom: 3px; }
+  .chipgrid { margin-top: 22px; }
+  .chipgrid h4 { color: var(--ink); margin-bottom: 8px; font-size: .82rem; text-transform: uppercase; letter-spacing: .08em; }
+  .chipgrid ul { margin: 0; padding-left: 18px; color: var(--muted); }
+  .chipgrid li { padding: 2px 0; }
+
+  .narrow { max-width: 760px; }
+  .faqs { margin-top: 22px; }
+  .faq { border: 1px solid var(--line); border-radius: 12px; padding: 4px 18px; margin-bottom: 12px; background: #fff; }
+  .faq summary { cursor: pointer; font-weight: 700; color: var(--ink); padding: 14px 0; list-style: none; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq[open] summary { border-bottom: 1px solid var(--line); }
+  .faq p { padding: 12px 0; color: var(--text); }
+  .cta { text-align: center; display: grid; gap: 18px; place-items: center; }
+</style>

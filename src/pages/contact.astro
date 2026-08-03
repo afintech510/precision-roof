@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSite } from '../lib/content';
+const site = await getSite();
+---
+<BaseLayout title={`Book a Free Inspection — ${site.businessName}`} description="Book a free, documented roof inspection anywhere in western & central Suffolk County.">
+  <section class="section">
+    <div class="container narrow">
+      <span class="eyebrow">Book a free inspection</span>
+      <h1>Get a straight answer on your roof</h1>
+      <p class="lede">No pressure, no “today only” pricing. Call us or request a free inspection and you’ll get a documented assessment with itemized pricing in writing.</p>
+      <div class="contact-actions">
+        <a class="btn btn-primary" href={site.phoneHref}>Call {site.phone}</a>
+        <span class="muted">Mon–Sat · Serving 12 Suffolk towns</span>
+      </div>
+      <p class="note muted">A full 3-step booking form (ZIP → service → contact) with speed-to-lead text-back is wired in a later build phase. For now, a call is fastest.</p>
+      <p class="lic tnum">✓ {site.licenseNumber} · Fully insured</p>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .narrow { max-width: 720px; }
+  h1 { margin: 12px 0 14px; }
+  .contact-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin: 24px 0 14px; }
+  .note { font-size: .9rem; margin-bottom: 18px; }
+  .lic { color: var(--good); font-weight: 700; font-size: .9rem; }
+</style>

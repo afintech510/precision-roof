@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSite } from '../lib/content';
+const site = await getSite();
+---
+<BaseLayout title={`About — ${site.businessName}`} description="A Suffolk County roofing company built on transparency: real pricing, a verifiable license, and honest inspections.">
+  <section class="section">
+    <div class="container narrow">
+      <span class="eyebrow">About us</span>
+      <h1>Roofing without the runaround</h1>
+      <p class="lede">We started {site.businessName} because roofing in Suffolk County had a trust problem: vague quotes, “today only” pressure, and copy-paste town pages that never actually knew your neighborhood.</p>
+      <p>So we do the opposite. We publish itemized pricing by town and home size. We put a real, verifiable license number on every page. And we research each town — building departments, permit timelines, historic districts, the housing stock on your street — so the advice you get is about <em>your</em> roof, not a template.</p>
+      <ul class="vals">
+        <li><strong>Transparent.</strong> Written, itemized pricing before any work.</li>
+        <li><strong>Local.</strong> 12 Suffolk towns, researched to the block.</li>
+        <li><strong>Accountable.</strong> {site.licenseNumber}, fully insured, easy to verify.</li>
+      </ul>
+      <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .narrow { max-width: 720px; }
+  h1 { margin: 12px 0 14px; }
+  p { margin-bottom: 16px; }
+  .vals { list-style: none; padding: 0; margin: 8px 0 24px; display: grid; gap: 12px; }
+  .vals li { padding-left: 28px; position: relative; }
+  .vals li::before { content: "✓"; position: absolute; left: 0; color: var(--good); font-weight: 800; }
+</style>
