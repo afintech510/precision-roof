@@ -18,5 +18,14 @@ migrations_dir = "migrations"
 # Durable Object for the per-phone/budget/suppression authority (spec §3.1)
 # is declared in Phase 05b, not here.
 
-# KV / R2 / Queues bindings are added by the phases that introduce them
-# (pricing blob, backups, async SMS dispatch).
+# Pricing-blob cache — Cloudflare KV (spec §3.2 [C2-023]). /api/webhooks/sanity-
+# publish materializes the blob here; /api/quote reads it (and falls back to an
+# in-process build from CMS content if empty, so it never fails closed).
+# Create once:  npx wrangler kv namespace create PRICING_KV
+# then paste the returned id below (id left blank until provisioned).
+[[kv_namespaces]]
+binding = "PRICING_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# R2 / Queues + the Durable Object (per-phone/budget/suppression authority, Phase
+# 05b) are added by the phases that introduce them.

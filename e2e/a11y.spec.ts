@@ -14,6 +14,7 @@ const ROUTES: string[] = [
   '/financing/',
   '/reviews/',
   '/accessibility/',
+  '/estimate/',
   '/areas/',
   '/areas/huntington/',
   '/areas/smithtown/',

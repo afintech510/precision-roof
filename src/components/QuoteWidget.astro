@@ -1,0 +1,189 @@
+---
+import type { QuoteTownRef } from '../server/quote';
+
+// QuoteWidget island (spec §4 [C2-017], F-014). Town × roof size → a non-binding
+// estimate range from CMS pricing via POST /api/quote. Renders the honest
+// no-price / warm-hand-off payloads for gated + out-of-area cases, and a
+// network-error state (inline call + retry + fetch timeout, aria-live) so a slow
+// or failed request never reads as a dead button. No framework — a plain script.
+interface Props {
+  towns: QuoteTownRef[];
+  phone: string;
+  phoneHref: string;
+}
+const { towns, phone, phoneHref } = Astro.props;
+const bands = [
+  { value: 'small', label: 'Up to 1,500 sq ft' },
+  { value: 'medium', label: '1,500–2,500 sq ft' },
+  { value: 'large', label: '2,500+ sq ft' },
+];
+---
+<form
+  class="quote-widget card"
+  id="quote-widget"
+  data-phone={phone}
+  data-phone-href={phoneHref}
+  novalidate
+>
+  <div class="qw-fields">
+    <div class="qw-field">
+      <label for="qw-town">Your town</label>
+      <select id="qw-town" name="townSlug" required>
+        <option value="">Select a town…</option>
+        {towns.map((t) => <option value={t.slug}>{t.name}</option>)}
+      </select>
+    </div>
+    <div class="qw-field">
+      <label for="qw-band">Roof size</label>
+      <select id="qw-band" name="band" required>
+        <option value="">Select a size…</option>
+        {bands.map((b) => <option value={b.value}>{b.label}</option>)}
+      </select>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary qw-submit">See my estimate range</button>
+
+  <p class="qw-disclosure muted">
+    A non-binding range for asphalt roof replacement, based on typical local
+    pricing — not a quote. Your final price comes after a free on-site inspection.
+  </p>
+
+  <div class="qw-result" id="qw-result" role="status" aria-live="polite" aria-atomic="true"></div>
+</form>
+
+<script>
+  interface QuoteResponse {
+    outcome: 'estimate' | 'informational_only' | 'out_of_area' | 'malformed';
+    disclosure: string;
+    town?: string;
+    estimate?: { low: number; high: number; band: string; provisional: boolean };
+  }
+  const form = document.getElementById('quote-widget') as HTMLFormElement | null;
+  if (form) {
+    const result = document.getElementById('qw-result') as HTMLElement;
+    const submit = form.querySelector('.qw-submit') as HTMLButtonElement;
+    const phone = form.dataset.phone ?? '';
+    const phoneHref = form.dataset.phoneHref ?? '';
+    const usd = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      maximumFractionDigits: 0,
+    });
+
+    const clear = () => {
+      while (result.firstChild) result.removeChild(result.firstChild);
+    };
+    const el = (tag: string, cls?: string, text?: string) => {
+      const node = document.createElement(tag);
+      if (cls) node.className = cls;
+      if (text != null) node.textContent = text;
+      return node;
+    };
+    const callLink = () => {
+      const a = el('a', 'btn btn-primary qw-call', `Call ${phone}`) as HTMLAnchorElement;
+      a.href = phoneHref;
+      return a;
+    };
+
+    const renderEstimate = (r: QuoteResponse) => {
+      if (!r.estimate) return;
+      clear();
+      result.appendChild(el('p', 'qw-eyebrow', r.town ? `Estimate for ${r.town}` : 'Your estimate'));
+      const range = `${usd.format(r.estimate.low)} – ${usd.format(r.estimate.high)}`;
+      result.appendChild(el('p', `qw-range${r.estimate.provisional ? ' is-provisional' : ''}`, range));
+      result.appendChild(el('p', 'qw-note muted', r.disclosure));
+      const a = el('a', 'btn btn-ghost qw-book', 'Book a free inspection') as HTMLAnchorElement;
+      a.href = '/contact/';
+      result.appendChild(a);
+    };
+
+    const renderMessage = (r: QuoteResponse, heading: string) => {
+      clear();
+      result.appendChild(el('p', 'qw-eyebrow', heading));
+      result.appendChild(el('p', 'qw-note', r.disclosure));
+      result.appendChild(callLink());
+    };
+
+    const renderNetworkError = () => {
+      clear();
+      result.appendChild(el('p', 'qw-eyebrow', 'We couldn’t load your estimate'));
+      result.appendChild(
+        el('p', 'qw-note', 'Something went wrong reaching us. Please call or try again.'),
+      );
+      const actions = el('div', 'qw-actions');
+      actions.appendChild(callLink());
+      const retry = el('button', 'btn btn-ghost qw-retry', 'Try again') as HTMLButtonElement;
+      retry.type = 'button';
+      retry.addEventListener('click', () => form.requestSubmit());
+      actions.appendChild(retry);
+      result.appendChild(actions);
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const townSlug = String(data.get('townSlug') ?? '');
+      const band = String(data.get('band') ?? '');
+      if (!townSlug || !band) {
+        clear();
+        result.appendChild(el('p', 'qw-note', 'Please choose your town and roof size.'));
+        return;
+      }
+
+      submit.disabled = true;
+      submit.textContent = 'Getting your estimate…';
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      try {
+        const res = await fetch('/api/quote', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ townSlug, band }),
+          signal: controller.signal,
+        });
+        const r = (await res.json()) as QuoteResponse;
+        if (r.outcome === 'estimate' && r.estimate) renderEstimate(r);
+        else if (r.outcome === 'informational_only') renderMessage(r, 'We serve your area');
+        else if (r.outcome === 'out_of_area') renderMessage(r, 'Just outside our map');
+        else renderMessage(r, 'Let’s do this by phone');
+      } catch {
+        renderNetworkError();
+      } finally {
+        clearTimeout(timeout);
+        submit.disabled = false;
+        submit.textContent = 'See my estimate range';
+      }
+    });
+  }
+</script>
+
+<style>
+  .quote-widget { display: grid; gap: 16px; max-width: 560px; }
+  .qw-fields { display: grid; gap: 14px; }
+  @media (min-width: 520px) { .qw-fields { grid-template-columns: 1fr 1fr; } }
+  .qw-field { display: grid; gap: 6px; }
+  .qw-field label { font-weight: 700; font-size: .9rem; color: var(--ink); }
+  .qw-field select {
+    font: inherit; padding: 12px 13px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--line); background: var(--paper); color: var(--text);
+    min-height: 48px;
+  }
+  .qw-field select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .qw-disclosure { font-size: .85rem; margin: 0; }
+  .qw-result:empty { display: none; }
+  .qw-result {
+    display: grid; gap: 10px; margin-top: 4px; padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .qw-eyebrow {
+    font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent-700); margin: 0;
+  }
+  .qw-range { font-size: clamp(1.7rem, 1.2rem + 2vw, 2.3rem); font-weight: 800; color: var(--ink); margin: 0; }
+  .qw-range.is-provisional { color: var(--brand); }
+  .qw-note { font-size: .95rem; margin: 0; color: var(--text); }
+  .qw-note.muted { color: var(--muted); }
+  .qw-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .qw-book, .qw-call, .qw-retry { align-self: start; }
+</style>

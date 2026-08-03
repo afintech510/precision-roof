@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import QuoteWidget from '../components/QuoteWidget.astro';
+import { getSite, getQuoteTowns } from '../lib/content';
+
+const site = await getSite();
+const towns = await getQuoteTowns();
+---
+<BaseLayout
+  title={`Instant Roof Estimate — ${site.businessName}`}
+  description="Get a transparent, non-binding roof replacement estimate range for your Suffolk County town — no pushy sales, just honest local pricing."
+>
+  <section class="section">
+    <div class="container narrow">
+      <span class="eyebrow">Transparent pricing</span>
+      <h1>See a real estimate range — before you call</h1>
+      <p class="lede">
+        Pick your town and roof size for an honest, non-binding range built from
+        our town-level pricing. No “today only” gimmicks — the number you see is
+        the range we’d inspect against.
+      </p>
+
+      <div class="estimate-wrap">
+        <QuoteWidget towns={towns} phone={site.phone} phoneHref={site.phoneHref} />
+      </div>
+
+      <p class="note muted">
+        East-End homes and towns outside our launch map get a warm hand-off by
+        phone rather than a price online. {site.licenseNumber} · Fully insured.
+      </p>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .narrow { max-width: 760px; }
+  h1 { margin: 12px 0 14px; }
+  .estimate-wrap { margin: 26px 0 18px; }
+  .note { font-size: .9rem; }
+</style>
