@@ -135,3 +135,58 @@ Cloudflare Access/OIDC + MFA is configured in the dashboard, not as a secret.
 **Decisions requested from Adam:** (a) approve Option A + the static→Worker deploy
 shift; (b) green-light provisioning the §4 secrets in Doppler; (c) confirm the
 rollout order above (quote-first).
+
+---
+
+## Addendum (2026-08-03) — the DO/Queue entry-export gap, confirmed empirically
+
+Since this proposal was drafted, `/api/quote`, both webhooks, and the operator
+dashboard shipped via Option A exactly as described (see BUILDPLAN). Phase 05b
+(this session) built `SmsAuthorityDO` + its pure core, the Queue-consumer
+dispatch core, `slo-sweep`, and `/api/lead` — all unit/route-tested — but hit a
+narrower version of §2's deploy-model question that's worth recording
+precisely, because it's no longer hypothetical:
+
+**The problem, confirmed by trying it, not just reading docs:** adding a live
+`[[durable_objects.bindings]]` entry to `wrangler.toml` (`class_name =
+"SmsAuthorityDO"`) breaks `npm run build` outright — `astro build`'s prerender
+step spins up a local Miniflare instance against the *compiled* Worker output,
+which only exports `fetch` (the `@astrojs/cloudflare` adapter's generated
+entry has no mechanism to also re-export a `DurableObject` class or a
+`queue()` handler). Miniflare fails at Worker-startup with `Class extends
+value undefined is not a constructor`. The same failure would hit `wrangler
+deploy`. This is not a config typo — the class genuinely isn't in the bundle
+Cloudflare would run. `wrangler.toml` currently keeps the DO block as a
+commented example for exactly this reason; live-binding it is blocked on
+picking one of:
+
+- **(i) Custom Worker entry wrapper.** Replace the adapter's auto-detected
+  entry with a small hand-written one that imports and re-exports the Astro
+  `fetch` handler (from the adapter's build output) alongside `SmsAuthorityDO`
+  and a `queue()` handler that calls `dispatchSmsFromQueue`/`sms-authority-do`.
+  Point `wrangler.toml`'s `main` at the wrapper. One Worker, one deploy — same
+  shape as Option A, just with an extra hop for the non-`fetch` exports.
+  Risk: depends on the adapter's build output staying import-friendly across
+  `@astrojs/cloudflare` upgrades; needs a smoke test in CI so a version bump
+  can't silently drop the wrapper's re-export.
+- **(ii) Second, separate Worker.** A small hand-authored Worker (its own
+  `wrangler.toml`/entry) owning only `SmsAuthorityDO` + the queue consumer,
+  deployed independently from the Astro Worker, which calls it over a service
+  binding or the DO's public HTTP interface. Cleaner isolation (Astro
+  upgrades can't break it), but two deploys instead of one, and the Astro
+  Worker needs a service binding to reach it.
+
+Queue **producer** and **consumer** entries, by contrast, do *not* hit this
+failure mode — `[[queues.producers]]`/`[[queues.consumers]]` are live in
+`wrangler.toml` today and `npm run build` passes with them present, because a
+producer binding is just a handle (`env.SMS_QUEUE.send(...)`, already used by
+`/api/lead`) and Miniflare doesn't need a `queue()` handler to exist to start
+up. Only the **consumer side** (actually processing messages) needs (i) or
+(ii) — the same decision as the DO.
+
+**Recommendation:** (i), for the reason Option A itself was recommended —
+one artifact, one deploy, no service-binding indirection — with a CI smoke
+test asserting the wrapper still re-exports `fetch` after any adapter bump.
+Deferred, like the rest of this proposal, to Adam's sign-off — not picked
+unilaterally, and not attempted without an explicit go-ahead given the
+current live topology (see memory `hosting-cloudflare-pages`).
