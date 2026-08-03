@@ -15,7 +15,7 @@
 // Adam gates prod mutations — run this yourself when ready; it is never run by
 // the build orchestrator.
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { writeFileSync, unlinkSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -74,9 +74,9 @@ console.log('  ' + keys.join(', '));
 const tmp = join(tmpdir(), `pr-secrets-${process.pid}.json`);
 writeFileSync(tmp, JSON.stringify(payload), { mode: 0o600 });
 try {
-  execFileSync('npx', ['wrangler', 'pages', 'secret', 'bulk', tmp, '--project-name', PROJECT], {
-    stdio: 'inherit',
-  });
+  // execSync goes through the shell so `npx` (npx.cmd on Windows) resolves;
+  // Node won't spawn a .cmd directly without a shell.
+  execSync(`npx wrangler pages secret bulk "${tmp}" --project-name ${PROJECT}`, { stdio: 'inherit' });
 } finally {
   try { unlinkSync(tmp); } catch { /* already gone */ }
 }
