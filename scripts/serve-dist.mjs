@@ -42,6 +42,45 @@ async function ensureBuilt() {
   }
 }
 
+// Minimal Cloudflare Pages `_headers` file parser: blocks are a path pattern
+// line followed by indented `Header: value` lines. Only `/*` (match-all) is
+// needed here — per-path glob matching isn't implemented since nothing in
+// this repo's _headers uses anything narrower yet.
+async function loadHeaderRules() {
+  let text;
+  try {
+    text = await readFile(join(ROOT, '_headers'), 'utf8');
+  } catch {
+    return [];
+  }
+  const rules = [];
+  let current = null;
+  for (const rawLine of text.split('\n')) {
+    const line = rawLine.replace(/\r$/, '');
+    if (line.trim() === '') continue;
+    if (/^\s/.test(line)) {
+      if (!current) continue;
+      const idx = line.indexOf(':');
+      if (idx === -1) continue;
+      const key = line.slice(0, idx).trim();
+      const value = line.slice(idx + 1).trim();
+      current.headers[key] = value;
+    } else {
+      current = { pattern: line.trim(), headers: {} };
+      rules.push(current);
+    }
+  }
+  return rules;
+}
+
+function headersForPath(rules, pathname) {
+  const out = {};
+  for (const rule of rules) {
+    if (rule.pattern === '/*' || rule.pattern === pathname) Object.assign(out, rule.headers);
+  }
+  return out;
+}
+
 /** Resolve a URL pathname to a file inside ROOT, or null if it escapes/absent. */
 async function resolveFile(pathname) {
   const clean = decodeURIComponent(pathname.split('?')[0]);
@@ -69,17 +108,20 @@ async function resolveFile(pathname) {
 }
 
 await ensureBuilt();
+const headerRules = await loadHeaderRules();
 
 const server = createServer(async (req, res) => {
   try {
+    const pathname = (req.url ?? '/').split('?')[0];
+    const extra = headersForPath(headerRules, pathname);
     const file = await resolveFile(req.url ?? '/');
     if (!file) {
-      res.writeHead(404, { 'content-type': 'text/plain' });
+      res.writeHead(404, { 'content-type': 'text/plain', ...extra });
       res.end('Not found');
       return;
     }
     const body = await readFile(file);
-    res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
+    res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream', ...extra });
     res.end(body);
   } catch {
     res.writeHead(500, { 'content-type': 'text/plain' });
