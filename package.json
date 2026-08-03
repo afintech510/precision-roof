@@ -31,12 +31,14 @@
     "sanity": "^6.8.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@cloudflare/workers-types": "^5.20260801.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@types/node": "^26.1.2",
     "@vitest/coverage-v8": "^4.1.10",
     "astro-eslint-parser": "^3.0.0",
+    "axe-core": "^4.12.1",
     "eslint": "^10.8.0",
     "eslint-plugin-astro": "^3.1.0",
     "typescript": "^6.0.3",

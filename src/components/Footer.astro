@@ -44,6 +44,10 @@ const year = 2026;
   .cols h4 { color: #fff; font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
   .cols a { display: block; color: #b9c6d3; padding: 4px 0; font-size: .95rem; }
   .cols a:hover { color: #fff; }
+  /* muted text on the ink footer needs a light tone for AA (global --muted fails here). */
+  .site-footer .muted { color: #b9c6d3; }
+  /* keep the on-ink book button's ink text — .cols a would otherwise dim it to gray on white. */
+  .contact .book { color: var(--ink); }
   .about strong { color: #fff; font-size: 1.1rem; display: block; margin-bottom: 6px; }
   .about .lic { color: #f0a559; font-size: .85rem; margin-top: 6px; }
   .about .verify { color: #9fd3b6; margin-top: 8px; }

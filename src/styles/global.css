@@ -5,8 +5,9 @@
   --ink: #0c1a29;
   --brand: #143b5e;
   --brand-700: #0f2c47;
-  --accent: #e07b2c;      /* copper — warmth, roofs, primary CTA */
-  --accent-700: #c1651c;
+  --accent: #e07b2c;      /* copper — brand CTA fill (use with dark ink text for AA) */
+  --accent-700: #9c520e;  /* dark copper — for accent TEXT on light bg (AA 5.8:1) */
+  --accent-hover: #cf6f1f;/* CTA hover fill — stays light enough for ink text (AA 4.9:1) */
   --emergency: #c62839;   /* urgent click-to-call */
   --sand: #f5f1ea;        /* warm section background */
   --paper: #ffffff;
@@ -61,6 +62,7 @@ p { color: var(--text); }
 .lede { font-size: 1.15rem; color: var(--muted); max-width: 60ch; }
 .section--ink .lede { color: #aebccb; }
 .muted { color: var(--muted); }
+.section--ink .muted { color: #aebccb; } /* --muted fails AA on the ink background */
 .tnum { font-variant-numeric: tabular-nums; }
 
 /* Buttons */
@@ -72,8 +74,9 @@ p { color: var(--text); }
   min-height: 48px; /* WCAG 2.2 target size */
 }
 .btn:active { transform: translateY(1px); }
-.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(224, 123, 44, .32); }
-.btn-primary:hover { background: var(--accent-700); }
+/* Dark ink text keeps the vibrant copper fill while meeting WCAG AA (5.8:1). */
+.btn-primary { background: var(--accent); color: var(--ink); box-shadow: 0 6px 16px rgba(224, 123, 44, .32); }
+.btn-primary:hover { background: var(--accent-hover); }
 .btn-emergency { background: var(--emergency); color: #fff; box-shadow: 0 6px 16px rgba(198, 40, 57, .3); }
 .btn-emergency:hover { filter: brightness(1.06); }
 .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
