@@ -233,6 +233,10 @@ export function messageLogRepo(db: SqlExecutor) {
       );
       return r.changes === 1;
     },
+
+    getByProviderId(providerMessageId: string): Promise<{ status: string; status_rank: number } | undefined> {
+      return db.get(`SELECT status, status_rank FROM message_log WHERE provider_message_id = ?`, [providerMessageId]);
+    },
   };
 }
 
