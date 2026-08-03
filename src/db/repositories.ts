@@ -83,6 +83,20 @@ export function leadRepo(db: SqlExecutor) {
     },
 
     /**
+     * Record a policy reason discovered after the lead row was already
+     * written — e.g. the DO's suppression re-check ran after intake because
+     * intake must insert the row before it can safely enqueue a dispatch
+     * (spec §3.1 send-time symmetry; see lead-intake.ts).
+     */
+    async setSmsSuppressedReason(
+      id: string,
+      reason: 'turnstile_fallback' | 'east_end_gate' | 'opt_out',
+      now: number,
+    ): Promise<void> {
+      await db.run(`UPDATE lead SET sms_suppressed_reason = ?, updated_at = ? WHERE id = ?`, [reason, now, id]);
+    },
+
+    /**
      * Atomically claim this lead for a single outbound speed-to-lead SMS.
      * Returns true exactly once: subsequent calls (or a racing sweep) see
      * sms_claimed_at set and get false. Also refuses suppressed / non-advertising

@@ -116,3 +116,20 @@ export function shardIdForPhone(phoneE164: string, shardCount: number): number {
   }
   return hash % shardCount;
 }
+
+/** Shard count for the LEAD_AUTHORITY DO namespace — shared by the route and its tests. */
+export const DEFAULT_SHARD_COUNT = 16;
+
+/**
+ * The narrow surface `/api/lead` needs from the `LEAD_AUTHORITY` Durable Object
+ * binding — deliberately NOT Cloudflare's generic `DurableObjectNamespace<T>`
+ * RPC-branded type (that generic resolves through `Rpc.DurableObjectBranded`
+ * plumbing that adds real typecheck risk for no benefit here, since this repo
+ * hand-rolls its types rather than leaning on generics — see quote.ts/east-end-
+ * gate.ts). A route test supplies a plain object shaped like this; the real
+ * runtime binding satisfies it structurally.
+ */
+export interface LeadAuthorityBinding {
+  idFromName(name: string): unknown;
+  get(id: unknown): { reserve(input: ReserveInput): Promise<ReserveResult> };
+}

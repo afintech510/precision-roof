@@ -10,12 +10,10 @@ import { reserveSmsSlot, type ReserveInput, type ReserveResult } from './lead-au
 //
 // NOT YET WIRED: no `[[durable_objects.bindings]]` / `[[migrations]]` entry
 // exists in wrangler.toml yet, and the class is not re-exported from the
-// Worker's main entry (the `@astrojs/cloudflare` adapter's generated entry has
-// no built-in mechanism for extra top-level exports like a custom DO class or
-// a `queue()` handler — confirmed by reading its dist/README, not assumed).
-// Wiring that is a deploy-model decision like PROPOSAL-api-wiring.md's Option
-// A/B, deferred to the increment that adds the Queue dispatch + `/api/lead`
-// route, so it can be decided once alongside the Queue's own entry-export need.
+// Worker's main entry. See src/server/sms-queue-consumer.ts for the full
+// writeup (confirmed by reading the installed adapter's build output, not
+// assumed) and the two topology options — deferred to Adam's sign-off, same
+// as this file's own deferral note used to say.
 export class LeadAuthorityDO extends DurableObject {
   reserve(input: ReserveInput): Promise<ReserveResult> {
     return reserveSmsSlot(this.ctx.storage, input, { genToken: () => crypto.randomUUID() });
