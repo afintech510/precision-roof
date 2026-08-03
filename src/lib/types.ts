@@ -17,6 +17,7 @@ export interface ServiceLite {
   category: 'urgent' | 'standard';
   isEmergencyCluster: boolean;
   summary: string;
+  jsonLdServiceType?: string;
   icon: string; // inline svg path data (24x24)
 }
 

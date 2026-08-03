@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getTowns, getSite, formatUsd } from '../../lib/content';
+import { breadcrumbs, faqPage } from '../../lib/structured-data';
 import type { TownFull } from '../../lib/types';
 
 export async function getStaticPaths() {
@@ -12,8 +13,16 @@ interface Props { town: TownFull }
 const { town } = Astro.props;
 const site = await getSite();
 const d = town.depth;
+const schema = [
+  breadcrumbs([
+    { name: 'Home', path: '/' },
+    { name: 'Service Areas', path: '/areas/' },
+    { name: town.name, path: `/areas/${town.slug}/` },
+  ]),
+  faqPage(town.faqs),
+];
 ---
-<BaseLayout title={`Roofing in ${town.name}, NY — ${site.businessName}`} description={town.blurb}>
+<BaseLayout title={`Roofing in ${town.name}, NY — ${site.businessName}`} description={town.blurb} schema={schema}>
   <nav class="crumbs container" aria-label="Breadcrumb">
     <a href="/">Home</a> <span aria-hidden="true">/</span>
     <a href="/areas/">Service Areas</a> <span aria-hidden="true">/</span>

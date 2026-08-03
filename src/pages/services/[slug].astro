@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getServices, getSite, getTownNames } from '../../lib/content';
+import { breadcrumbs, serviceSchema } from '../../lib/structured-data';
 import type { ServiceLite } from '../../lib/types';
 
 export async function getStaticPaths() {
@@ -12,8 +13,16 @@ const { service } = Astro.props;
 const site = await getSite();
 const townNames = (await getTownNames()).slice(0, 8);
 const urgent = service.isEmergencyCluster;
+const schema = [
+  breadcrumbs([
+    { name: 'Home', path: '/' },
+    { name: 'Services', path: '/services/' },
+    { name: service.name, path: `/services/${service.slug}/` },
+  ]),
+  serviceSchema(service, site),
+];
 ---
-<BaseLayout title={`${service.name} in Suffolk County — ${site.businessName}`} description={service.summary}>
+<BaseLayout title={`${service.name} in Suffolk County — ${site.businessName}`} description={service.summary} schema={schema}>
   <section class={`shero ${urgent ? 'urgent' : ''}`}>
     <div class="container shero-in">
       <span class="eyebrow">{urgent ? 'Emergency service' : 'Roofing service'}</span>
