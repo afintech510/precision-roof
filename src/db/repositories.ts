@@ -123,6 +123,22 @@ export function leadRepo(db: SqlExecutor) {
         [sentAt, sentAt, id],
       );
     },
+
+    /**
+     * Scrub the PII consent columns (ip/ua/source-url) past the 24-mo purge
+     * window (spec §2.5: "may be scrubbed from lead at 24-mo"). The full
+     * consent record already survives independently in `consent_record`
+     * (4-yr retention) — `consent_version`/`consent_timestamp` stay on `lead`
+     * since neither is personally identifying on its own. Returns rows changed.
+     */
+    async scrubConsentColumns(cutoffCreatedAt: number): Promise<number> {
+      const r = await db.run(
+        `UPDATE lead SET consent_ip = NULL, consent_ua = NULL, consent_source_url = NULL
+         WHERE created_at < ? AND (consent_ip IS NOT NULL OR consent_ua IS NOT NULL OR consent_source_url IS NOT NULL)`,
+        [cutoffCreatedAt],
+      );
+      return r.changes;
+    },
   };
 }
 
@@ -185,6 +201,11 @@ export function webhookEventsRepo(db: SqlExecutor) {
     async markProcessed(key: string, now: number): Promise<void> {
       await db.run(`UPDATE webhook_events SET processed_at = ? WHERE idempotency_key = ?`, [now, key]);
     },
+
+    /** Prune rows past the provider retry window (spec §8, C2-024). Returns rows deleted. */
+    async pruneOlderThan(cutoff: number): Promise<number> {
+      return (await db.run(`DELETE FROM webhook_events WHERE received_at < ?`, [cutoff])).changes;
+    },
   };
 }
 
@@ -211,6 +232,16 @@ export function consentRepo(db: SqlExecutor) {
         [c.id, c.phoneE164, c.consentText, c.consentVersion, c.consentTimestamp,
           c.consentIp ?? null, c.consentUa ?? null, c.consentSourceUrl ?? null, c.leadId ?? null],
       );
+    },
+
+    /**
+     * Delete rows past the 4-year TCPA statute-of-limitations retention
+     * (spec §2.5). The append-only trigger on this table blocks UPDATE, not
+     * DELETE — the migration's own comment names this purge as the one
+     * permitted delete. Returns rows deleted.
+     */
+    async purgeOlderThan(cutoff: number): Promise<number> {
+      return (await db.run(`DELETE FROM consent_record WHERE consent_timestamp < ?`, [cutoff])).changes;
     },
   };
 }
@@ -261,6 +292,19 @@ export function messageLogRepo(db: SqlExecutor) {
     getByProviderId(providerMessageId: string): Promise<{ status: string; status_rank: number } | undefined> {
       return db.get(`SELECT status, status_rank FROM message_log WHERE provider_message_id = ?`, [providerMessageId]);
     },
+
+    /**
+     * Anonymize (not delete — delivery-status history stays useful for
+     * reporting) the PII contact column past the TCPA retention window
+     * (spec §8, C2-024). Returns rows changed.
+     */
+    async anonymizeOlderThan(cutoff: number): Promise<number> {
+      const r = await db.run(
+        `UPDATE message_log SET to_contact = NULL WHERE created_at < ? AND to_contact IS NOT NULL`,
+        [cutoff],
+      );
+      return r.changes;
+    },
   };
 }
 
@@ -307,6 +351,9 @@ export interface ReviewRequestInput {
   requestedAt: number;
 }
 
+/** `customer_contact` is NOT NULL, so anonymization writes this sentinel rather than NULL. */
+export const REDACTED_CONTACT = '[redacted]';
+
 export function reviewRequestRepo(db: SqlExecutor) {
   return {
     async createPending(r: ReviewRequestInput): Promise<void> {
@@ -324,6 +371,15 @@ export function reviewRequestRepo(db: SqlExecutor) {
         [now, id],
       );
       return r.changes === 1;
+    },
+
+    /** Anonymize the PII contact column past retention (spec §8, C2-031). Returns rows changed. */
+    async anonymizeOlderThan(cutoff: number): Promise<number> {
+      const r = await db.run(
+        `UPDATE review_request SET customer_contact = ? WHERE requested_at < ? AND customer_contact != ?`,
+        [REDACTED_CONTACT, cutoff, REDACTED_CONTACT],
+      );
+      return r.changes;
     },
   };
 }
