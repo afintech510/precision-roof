@@ -73,6 +73,11 @@ export function leadRepo(db: SqlExecutor) {
       return db.get<LeadRow>(`SELECT * FROM lead WHERE id = ?`, [id]);
     },
 
+    /** Leads in a given status, newest first — powers the failed-send queue. */
+    listByStatus(status: string): Promise<LeadRow[]> {
+      return db.all<LeadRow>(`SELECT * FROM lead WHERE status = ? ORDER BY created_at DESC`, [status]);
+    },
+
     async setStatus(id: string, status: string, now: number): Promise<number> {
       return (await db.run(`UPDATE lead SET status = ?, updated_at = ? WHERE id = ?`, [status, now, id])).changes;
     },
@@ -326,6 +331,25 @@ export function operatorAccessLogRepo(db: SqlExecutor) {
   };
 }
 
+// ─── resend_token ── single-use operator resend-link ledger [F-023] ──────────
+export function resendTokenRepo(db: SqlExecutor) {
+  return {
+    /**
+     * Claim a resend token by its jti. Returns true exactly once (first use):
+     * a replayed token sees the row already present and gets false. Atomic via
+     * INSERT OR IGNORE, mirroring webhook_events.claim — this is what makes the
+     * emailed resend link single-use (spec §7.1).
+     */
+    async claim(jti: string, leadId: string | null, now: number): Promise<boolean> {
+      const r = await db.run(
+        `INSERT OR IGNORE INTO resend_token (jti, lead_id, consumed_at) VALUES (?,?,?)`,
+        [jti, leadId, now],
+      );
+      return r.changes === 1;
+    },
+  };
+}
+
 // ─── aggregator ──────────────────────────────────────────────────────────────
 export function createRepositories(db: SqlExecutor) {
   return {
@@ -337,5 +361,6 @@ export function createRepositories(db: SqlExecutor) {
     booking: bookingRepo(db),
     reviewRequest: reviewRequestRepo(db),
     operatorAccessLog: operatorAccessLogRepo(db),
+    resendToken: resendTokenRepo(db),
   };
 }
