@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { countThirdPartyScripts, imagesMissingDimensions, checkBudget } from './perf-budget';
 
-const HOST = 'roof.benchworksai.com';
+const HOST = 'premiumroofsolutions.com';
 
 describe('performance budget', () => {
   it('ignores inline and same-origin scripts', () => {
-    const html = `<script>console.log(1)</script><script src="/_astro/x.js"></script><script src="https://roof.benchworksai.com/a.js"></script>`;
+    const html = `<script>console.log(1)</script><script src="/_astro/x.js"></script><script src="https://premiumroofsolutions.com/a.js"></script>`;
     expect(countThirdPartyScripts(html, HOST)).toBe(0);
   });
 

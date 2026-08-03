@@ -4,7 +4,7 @@ import type { SiteSettings, ServiceLite, FaqItem } from './types';
 // objects so they unit-test without a DOM. Review/AggregateRating is emitted
 // only from a real, freshness-checked feed (Phase 06 wiring), never sampled.
 
-const SITE = 'https://roof.benchworksai.com';
+const SITE = 'https://premiumroofsolutions.com';
 const abs = (path: string) => new URL(path, SITE).href;
 
 export function roofingContractor(site: SiteSettings) {

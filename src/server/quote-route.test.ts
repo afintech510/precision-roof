@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { POST, GET } from './quote';
+import { POST, GET } from '../pages/api/quote';
 
 // Route-level test for the /api/quote adapter: no runtime env (so Turnstile is
 // skipped and the blob falls back to an in-process build from sample content),
 // proving the wiring end-to-end without Miniflare or vendor keys.
 
 function ctx(body: unknown) {
-  const request = new Request('https://roof.benchworksai.com/api/quote', {
+  const request = new Request('https://premiumroofsolutions.com/api/quote', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),

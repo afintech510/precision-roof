@@ -6,7 +6,7 @@ import { perfBudget } from './src/integrations/perf-budget';
 // Static-first (spec §1.2). API routes opt into on-demand rendering per-route
 // with `export const prerender = false`, served by the Cloudflare adapter.
 export default defineConfig({
-  site: 'https://roof.benchworksai.com',
+  site: 'https://premiumroofsolutions.com',
   output: 'static',
   adapter: cloudflare(),
   integrations: [sitemap(), perfBudget()],

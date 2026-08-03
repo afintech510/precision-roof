@@ -18,7 +18,7 @@ function walkHtml(dir: string): string[] {
 }
 
 export function perfBudget(opts: { siteHost?: string; maxScripts?: number } = {}): AstroIntegration {
-  const siteHost = opts.siteHost ?? 'roof.benchworksai.com';
+  const siteHost = opts.siteHost ?? 'premiumroofsolutions.com';
   const maxScripts = opts.maxScripts ?? 4;
   return {
     name: 'perf-budget',

@@ -10,7 +10,7 @@ import type { SiteSettings } from '../lib/types';
 interface Props { title: string; description?: string; schema?: unknown[] }
 const { title, description = 'Transparent, town-by-town roofing across Suffolk County, NY. Licensed, insured, itemized pricing.', schema = [] } = Astro.props;
 const site: SiteSettings = await getSite();
-const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://roof.benchworksai.com').href;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://premiumroofsolutions.com').href;
 const jsonLd = [roofingContractor(site), ...schema];
 ---
 <!doctype html>

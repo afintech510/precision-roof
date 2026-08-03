@@ -4,7 +4,7 @@ import type { SiteSettings, ServiceLite, TownFull, Review } from './types';
 // clearly as sample; content.ts prefers real Sanity data when available.
 
 export const sampleSite: SiteSettings = {
-  businessName: 'Precision Roofing of Suffolk',
+  businessName: 'Premium Roofing Solutions',
   licenseNumber: 'Suffolk County HIC #HI-63847',
   dcaVerifyUrl: 'https://www.suffolkcountyny.gov/consumeraffairs',
   phone: '(631) 555-0142',
