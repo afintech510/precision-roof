@@ -1,4 +1,4 @@
-import type { SiteSettings, ServiceLite, FaqItem } from './types';
+import type { SiteSettings, ServiceLite, FaqItem, Review } from './types';
 
 // JSON-LD builders (spec §2.2/§4, F-007). Pure functions returning plain
 // objects so they unit-test without a DOM. Review/AggregateRating is emitted
@@ -56,5 +56,33 @@ export function faqPage(faqs: FaqItem[]) {
       name: f.question,
       acceptedAnswer: { '@type': 'Answer', text: f.answer },
     })),
+  };
+}
+
+const DEFAULT_REVIEW_FRESHNESS_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+/** Review/AggregateRating JSON-LD (spec §2.2 CAUTION, F-007) — emitted only
+ * when every review carries a `lastSyncedAt` from a real feed sync and the
+ * *oldest* sync is still within the freshness window; otherwise suppressed
+ * (`null`), never fabricated from placeholder data. */
+export function aggregateRating(
+  reviews: Review[],
+  site: SiteSettings,
+  opts: { now: number; freshnessMs?: number },
+): object | null {
+  if (reviews.length === 0) return null;
+  const freshnessMs = opts.freshnessMs ?? DEFAULT_REVIEW_FRESHNESS_MS;
+  const syncTimes = reviews.map((r) => r.lastSyncedAt);
+  if (syncTimes.some((t) => t === undefined)) return null;
+  const oldestSync = Math.min(...(syncTimes as number[]));
+  if (opts.now - oldestSync > freshnessMs) return null;
+
+  const avg = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'AggregateRating',
+    itemReviewed: { '@type': 'RoofingContractor', name: site.businessName, '@id': `${SITE}/#business` },
+    ratingValue: Math.round(avg * 10) / 10,
+    reviewCount: reviews.length,
   };
 }

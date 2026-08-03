@@ -1,11 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getReviews, getSite } from '../lib/content';
+import { aggregateRating } from '../lib/structured-data';
 const reviews = await getReviews();
 const site = await getSite();
 const avg = (reviews.reduce((a, r) => a + r.rating, 0) / reviews.length).toFixed(1);
+const rating = aggregateRating(reviews, site, { now: Date.now() });
+const schema = rating ? [rating] : [];
 ---
-<BaseLayout title={`Reviews — ${site.businessName}`} description="Reviews from real Suffolk County roofing jobs.">
+<BaseLayout title={`Reviews — ${site.businessName}`} description="Reviews from real Suffolk County roofing jobs." schema={schema}>
   <section class="section">
     <div class="container">
       <span class="eyebrow">Reviews</span>

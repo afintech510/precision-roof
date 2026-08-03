@@ -60,4 +60,8 @@ export interface Review {
   rating: number;
   text: string;
   town?: string;
+  /** Epoch-ms the review feed was last synced (spec §2.2). Absent/stale means
+   * AggregateRating JSON-LD is suppressed rather than emitted — see
+   * src/lib/structured-data.ts `aggregateRating`. */
+  lastSyncedAt?: number;
 }

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getSite, getServices, getTowns, getTownNames, getReviews, formatUsd } from '../lib/content';
+import { aggregateRating } from '../lib/structured-data';
 
 const site = await getSite();
 const services = await getServices();
@@ -10,8 +11,10 @@ const reviews = await getReviews();
 const emergency = services.filter((s) => s.isEmergencyCluster);
 const detailedSlugs = new Set(towns.map((t) => t.slug));
 const heroPricing = towns[0].pricing;
+const rating = aggregateRating(reviews, site, { now: Date.now() });
+const schema = rating ? [rating] : [];
 ---
-<BaseLayout title={`${site.businessName} — Transparent Suffolk County Roofing`}>
+<BaseLayout title={`${site.businessName} — Transparent Suffolk County Roofing`} schema={schema}>
   <!-- HERO -->
   <section class="hero">
     <div class="container hero-grid">
