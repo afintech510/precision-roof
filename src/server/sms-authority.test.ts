@@ -83,7 +83,7 @@ describe('reserveSmsSend', () => {
 
   it('trips the anomaly budget on a sudden spike vs an established baseline', async () => {
     // Establish a low baseline: 1 send/minute for 30 minutes, different phones.
-    let now = 0;
+    let now: number;
     for (let m = 0; m < 30; m++) {
       now = m * 60_000;
       const r = await reserveSmsSend({ phoneE164: `+1516555${1000 + m}`, leadId: `lead-baseline-${m}` }, storage, deps(now));

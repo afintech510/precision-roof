@@ -1,0 +1,65 @@
+import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
+import { createRepositories } from '../../db/repositories';
+import { d1Executor } from '../../db/executor';
+import { handleLeadIntake, type LeadIntakeRequest } from '../../server/lead-intake';
+import type { ReserveOutcome } from '../../server/sms-authority';
+import type { SmsDispatchMessage } from '../../server/sms-dispatch';
+import { verifyTurnstile } from '../../server/turnstile';
+import { json } from '../../server/http';
+
+// POST /api/lead (spec §3.2, F-009/F-012). Thin adapter over the pure
+// `handleLeadIntake` core: verify Turnstile best-effort, bind the DO
+// reservation + Queue enqueue calls, then let the core decide everything
+// else (validation, East-End gate, channel).
+export const prerender = false;
+
+type LeadBody = LeadIntakeRequest & { turnstileToken?: unknown };
+
+async function parseBody(request: Request): Promise<LeadBody> {
+  try {
+    const ct = request.headers.get('content-type') ?? '';
+    if (ct.includes('application/json')) return (await request.json()) as LeadBody;
+    const fd = await request.formData();
+    return Object.fromEntries(fd) as LeadBody;
+  } catch {
+    return {};
+  }
+}
+
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
+
+  const body = await parseBody(request);
+  const turnstile = await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstileToken, clientAddress);
+
+  // The DO isn't wired into a deployed Worker yet (see wrangler.toml). Denying
+  // as a transient reason — never suppresses the lead, never blocks capture —
+  // means slo-sweep picks it right back up once the binding exists.
+  const reserveSms = async (phoneE164: string, leadId: string): Promise<ReserveOutcome> => {
+    if (!env.SMS_AUTHORITY) return { allow: false, reason: 'budget_anomaly' };
+    const stub = env.SMS_AUTHORITY.get(env.SMS_AUTHORITY.idFromName('global'));
+    return stub.reserve(phoneE164, leadId);
+  };
+
+  const enqueueSms = async (msg: SmsDispatchMessage): Promise<void> => {
+    if (!env.SMS_QUEUE) return; // never fail the request over an unwired queue
+    await env.SMS_QUEUE.send(msg);
+  };
+
+  const repos = createRepositories(d1Executor(env.OP_STORE));
+  const result = await handleLeadIntake(body, repos, {}, {
+    now: Date.now(),
+    newId: () => crypto.randomUUID(),
+    ip: clientAddress ?? null,
+    userAgent: request.headers.get('user-agent'),
+    sourceUrl: request.headers.get('referer'),
+    turnstileVerified: turnstile.verified,
+    reserveSms,
+    enqueueSms,
+  });
+
+  return json(result, result.status);
+};
+
+export const GET: APIRoute = () => json({ error: 'method_not_allowed' }, 405);

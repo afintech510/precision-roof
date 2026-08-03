@@ -18,19 +18,25 @@ migrations_dir = "migrations"
 # Durable Object for the per-phone/budget/suppression SMS-send authority (spec
 # §1.2, §3.1, [C2-003, C2-004, C2-033]) — pure core + thin DO class are built
 # and unit-tested (src/server/sms-authority.ts, src/durable-objects/sms-authority-do.ts).
-# Declared here for completeness; NOT actually wired into a deployed Worker —
-# the @astrojs/cloudflare adapter's generated entry only exports `fetch`, with
-# no built-in mechanism to also re-export a custom DO class or a `queue()`
-# handler. Binding this for real requires a custom Worker entry wrapper (see
-# docs/build/PROPOSAL-api-wiring.md addendum); deferred until that composition
-# decision is made and Adam approves a deploy.
-[[durable_objects.bindings]]
-name = "SMS_AUTHORITY"
-class_name = "SmsAuthorityDO"
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["SmsAuthorityDO"]
+# NOT actually declared as a live [[durable_objects.bindings]]/[[migrations]]
+# entry here: the @astrojs/cloudflare adapter's generated Worker entry only
+# exports `fetch`, with no built-in mechanism to also re-export a custom DO
+# class — so `class_name = "SmsAuthorityDO"` would reference a class that
+# doesn't exist in the compiled Worker, and both `npx wrangler deploy` and the
+# local Miniflare instance `npm run build`/`astro dev` spin up to prerender
+# would fail at Worker-startup ("Class extends value undefined is not a
+# constructor") confirmed by trying it. Binding this for real requires a
+# custom Worker entry wrapper (see docs/build/PROPOSAL-api-wiring.md
+# addendum); deferred until that composition decision is made and Adam
+# approves a deploy. The example block below is what to add once it exists:
+#
+# [[durable_objects.bindings]]
+# name = "SMS_AUTHORITY"
+# class_name = "SmsAuthorityDO"
+#
+# [[migrations]]
+# tag = "v1"
+# new_sqlite_classes = ["SmsAuthorityDO"]
 
 # Pricing-blob cache — Cloudflare KV (spec §3.2 [C2-023]). /api/webhooks/sanity-
 # publish materializes the blob here; /api/quote reads it (and falls back to an
