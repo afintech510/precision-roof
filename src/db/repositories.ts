@@ -78,8 +78,27 @@ export function leadRepo(db: SqlExecutor) {
       return db.all<LeadRow>(`SELECT * FROM lead WHERE status = ? ORDER BY created_at DESC`, [status]);
     },
 
+    /**
+     * `cron: slo-sweep` scope (spec §3.2): active, not permanently SMS-suppressed
+     * (turnstile_fallback / east_end_gate / opt_out), and never claimed for
+     * speed-to-lead SMS — i.e. leads whose original DO reservation was denied
+     * for a transient reason (per-phone window / budget anomaly) or whose queue
+     * dispatch never completed. Oldest first so the sweep drains the backlog.
+     */
+    listEligibleForSweep(): Promise<LeadRow[]> {
+      return db.all<LeadRow>(
+        `SELECT * FROM lead
+           WHERE advertising_status = 'active' AND sms_suppressed_reason IS NULL AND sms_claimed_at IS NULL
+         ORDER BY created_at ASC`,
+      );
+    },
+
     async setStatus(id: string, status: string, now: number): Promise<number> {
       return (await db.run(`UPDATE lead SET status = ?, updated_at = ? WHERE id = ?`, [status, now, id])).changes;
+    },
+
+    async setChannel(id: string, channel: 'sms' | 'callback', now: number): Promise<number> {
+      return (await db.run(`UPDATE lead SET channel = ?, updated_at = ? WHERE id = ?`, [channel, now, id])).changes;
     },
 
     /**
