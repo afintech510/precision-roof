@@ -12,7 +12,6 @@ export default [
       'playwright-report/**',
       'test-results/**',
       '.wrangler/**',
-      'sanity.config.ts',
     ],
   },
   js.configs.recommended,

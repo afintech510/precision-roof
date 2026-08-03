@@ -1,9 +1,18 @@
-// Phase 00: Sanity project link stub. Phase 01 converts this into a full
-// `defineConfig(...)` from the `sanity` studio package and registers the
-// document types (town / service / townPricing / job / review / faq / post /
-// siteSettings). Kept dependency-free here so the Phase 00 scaffold stays lean.
-// Excluded from tsc (see tsconfig "exclude").
-export const sanityProject = {
-  projectId: process.env.SANITY_PROJECT_ID ?? 'af66eilq',
-  dataset: process.env.SANITY_DATASET ?? 'production',
-} as const;
+import { defineConfig } from 'sanity';
+import { structureTool } from 'sanity/structure';
+import { visionTool } from '@sanity/vision';
+import { schemaTypes } from './sanity/schemaTypes';
+
+// Sanity Studio config. Run standalone with `npx sanity dev` / deploy with
+// `npx sanity deploy` (Phase 01). projectId/dataset are public identifiers.
+export const projectId = process.env.SANITY_PROJECT_ID ?? 'af66eilq';
+export const dataset = process.env.SANITY_DATASET ?? 'production';
+
+export default defineConfig({
+  name: 'precision-roof',
+  title: 'Suffolk Roofing',
+  projectId,
+  dataset,
+  plugins: [structureTool(), visionTool()],
+  schema: { types: schemaTypes },
+});

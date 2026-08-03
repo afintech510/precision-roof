@@ -22,8 +22,12 @@
   "dependencies": {
     "@astrojs/check": "^0.9.10",
     "@astrojs/cloudflare": "^14.1.7",
+    "@portabletext/types": "^4.0.2",
+    "@sanity/astro": "^3.5.0",
     "@sanity/client": "^7.26.0",
-    "astro": "^7.1.6"
+    "@sanity/vision": "^6.8.0",
+    "astro": "^7.1.6",
+    "sanity": "^6.8.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260801.1",
