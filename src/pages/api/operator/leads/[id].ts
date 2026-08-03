@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { createRepositories } from '../../../../db/repositories';
 import { d1Executor } from '../../../../db/executor';
 import { viewLead } from '../../../../server/dashboard';
@@ -9,9 +10,8 @@ import { json } from '../../../../server/http';
 // read: every PII exposure writes an operator_access_log row (in `viewLead`).
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request, params, clientAddress, locals }) => {
-  const env = locals.runtime?.env;
-  if (!env?.OP_STORE) return json({ error: 'not_configured' }, 503);
+export const GET: APIRoute = async ({ request, params, clientAddress }) => {
+  if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
 
   const op = requireOperatorAccess(request);
   if (!op) return json({ error: 'forbidden' }, 403);

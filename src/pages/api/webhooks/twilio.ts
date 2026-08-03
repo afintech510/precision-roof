@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { createRepositories } from '../../../db/repositories';
 import { d1Executor } from '../../../db/executor';
 import { handleTwilioStatus, handleTwilioInbound } from '../../../server/twilio';
@@ -11,9 +12,8 @@ import { json } from '../../../server/http';
 // message (`Body` + `From`).
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime?.env;
-  if (!env?.OP_STORE) return json({ error: 'not_configured' }, 503);
+export const POST: APIRoute = async ({ request }) => {
+  if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
 
   const authToken = env.TWILIO_AUTH_TOKEN;
   if (!authToken) return json({ error: 'not_configured' }, 503);

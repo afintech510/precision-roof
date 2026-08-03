@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { createRepositories } from '../../../../db/repositories';
 import { d1Executor } from '../../../../db/executor';
 import { authorizeResend } from '../../../../server/dashboard';
@@ -15,9 +16,8 @@ interface ResendBody {
   token?: unknown;
 }
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime?.env;
-  if (!env?.OP_STORE) return json({ error: 'not_configured' }, 503);
+export const POST: APIRoute = async ({ request }) => {
+  if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
 
   const secret = env.RESEND_TOKEN_SECRET;
   if (!secret) return json({ error: 'not_configured' }, 503);

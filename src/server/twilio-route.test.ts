@@ -6,6 +6,7 @@ import type { D1Database } from '@cloudflare/workers-types';
 import type { SqlParam } from '../db/executor';
 import { POST, GET } from '../pages/api/webhooks/twilio';
 import { computeTwilioSignature } from './twilio-signature';
+import { __setEnv } from '../test/cf-workers-stub';
 
 // Route-level test for the /api/webhooks/twilio adapter: signs a fixture form
 // body with the same auth token the route expects, backed by a fake D1 over
@@ -55,7 +56,8 @@ beforeEach(() => {
   env = { OP_STORE: fakeD1(db), TWILIO_AUTH_TOKEN: AUTH_TOKEN };
 });
 
-async function ctx(params: Record<string, string>, opts: { locals?: unknown; signature?: string } = {}) {
+async function ctx(params: Record<string, string>, opts: { env?: unknown; signature?: string } = {}) {
+  __setEnv(('env' in opts ? opts.env : env) as Record<string, unknown>);
   const body = new URLSearchParams(params).toString();
   const signature = opts.signature ?? (await computeTwilioSignature(AUTH_TOKEN, ROUTE_URL, params));
   const request = new Request(ROUTE_URL, {
@@ -63,19 +65,18 @@ async function ctx(params: Record<string, string>, opts: { locals?: unknown; sig
     headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-twilio-signature': signature },
     body,
   });
-  const locals = 'locals' in opts ? opts.locals : { runtime: { env } };
-  return { request, locals } as never;
+  return { request } as never;
 }
 
 describe('POST /api/webhooks/twilio', () => {
   it('503s when no runtime env is present', async () => {
-    const res = await POST(await ctx({ MessageSid: 'SM1', MessageStatus: 'sent' }, { locals: {} }));
+    const res = await POST(await ctx({ MessageSid: 'SM1', MessageStatus: 'sent' }, { env: {} }));
     expect(res.status).toBe(503);
   });
 
   it('503s when TWILIO_AUTH_TOKEN is not configured', async () => {
     const res = await POST(
-      await ctx({ MessageSid: 'SM1', MessageStatus: 'sent' }, { locals: { runtime: { env: { OP_STORE: fakeD1(db) } } } }),
+      await ctx({ MessageSid: 'SM1', MessageStatus: 'sent' }, { env: { OP_STORE: fakeD1(db) } }),
     );
     expect(res.status).toBe(503);
   });

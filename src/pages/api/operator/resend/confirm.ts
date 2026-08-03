@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { verifyResendToken } from '../../../../server/dashboard';
 import { requireOperatorAccess } from '../../../../server/access';
 import { json } from '../../../../server/http';
@@ -8,9 +9,8 @@ import { json } from '../../../../server/http';
 // it — safe for the operator to load this page before committing to resend.
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request, url, locals }) => {
-  const env = locals.runtime?.env;
-  if (!env?.OP_STORE) return json({ error: 'not_configured' }, 503);
+export const GET: APIRoute = async ({ request, url }) => {
+  if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
 
   const secret = env.RESEND_TOKEN_SECRET;
   if (!secret) return json({ error: 'not_configured' }, 503);

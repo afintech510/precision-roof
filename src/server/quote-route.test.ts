@@ -1,18 +1,19 @@
 import { describe, it, expect } from 'vitest';
 import { POST, GET } from '../pages/api/quote';
+import { __setEnv } from '../test/cf-workers-stub';
 
 // Route-level test for the /api/quote adapter: no runtime env (so Turnstile is
 // skipped and the blob falls back to an in-process build from sample content),
 // proving the wiring end-to-end without Miniflare or vendor keys.
 
 function ctx(body: unknown) {
+  __setEnv({}); // no bindings → Turnstile skipped, blob falls back to content
   const request = new Request('https://premiumroofsolutions.com/api/quote', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   });
-  // No runtime.env → env is undefined; route uses the content fallback.
-  return { request, locals: {}, clientAddress: '203.0.113.9' } as never;
+  return { request, clientAddress: '203.0.113.9' } as never;
 }
 
 async function call(body: unknown) {

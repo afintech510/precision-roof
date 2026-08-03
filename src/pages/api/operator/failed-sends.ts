@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { createRepositories } from '../../../db/repositories';
 import { d1Executor } from '../../../db/executor';
 import { listFailedSends } from '../../../server/dashboard';
@@ -10,9 +11,8 @@ import { json } from '../../../server/http';
 // (in `listFailedSends`).
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request, clientAddress, locals }) => {
-  const env = locals.runtime?.env;
-  if (!env?.OP_STORE) return json({ error: 'not_configured' }, 503);
+export const GET: APIRoute = async ({ request, clientAddress }) => {
+  if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
 
   const op = requireOperatorAccess(request);
   if (!op) return json({ error: 'forbidden' }, 403);

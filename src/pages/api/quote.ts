@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { computeQuote, type QuoteRequest } from '../../server/quote';
 import { readPricingBlob, buildPricingBlob } from '../../server/pricing-blob';
 import { getQuoteTowns, getPricingRows } from '../../lib/content';
@@ -31,8 +32,7 @@ async function parseBody(request: Request): Promise<QuoteBody> {
   }
 }
 
-export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
-  const env = locals.runtime?.env ?? ({} as App.Locals['runtime']['env']);
+export const POST: APIRoute = async ({ request, clientAddress }) => {
   const body = await parseBody(request);
 
   const turnstile = await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstileToken, clientAddress);

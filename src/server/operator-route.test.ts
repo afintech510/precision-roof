@@ -9,6 +9,7 @@ import { GET as getFailedSends } from '../pages/api/operator/failed-sends';
 import { GET as getConfirm } from '../pages/api/operator/resend/confirm';
 import { POST as postResend } from '../pages/api/operator/resend/index';
 import { mintResendToken } from './dashboard';
+import { __setEnv } from '../test/cf-workers-stub';
 
 // Route-level tests for /api/operator/*: Cloudflare Access gate (Cf-Access-
 // Authenticated-User-Email header), audited PII reads, and the single-use
@@ -70,7 +71,8 @@ beforeEach(async () => {
   );
 });
 
-function req(url: string, opts: { method?: string; withAccess?: boolean; body?: unknown; locals?: unknown } = {}) {
+function req(url: string, opts: { method?: string; withAccess?: boolean; body?: unknown; env?: unknown } = {}) {
+  __setEnv(('env' in opts ? opts.env : env) as Record<string, unknown>);
   const headers: Record<string, string> = {};
   if (opts.withAccess ?? true) headers[ACCESS_HEADER] = OPERATOR_EMAIL;
   if (opts.body !== undefined) headers['content-type'] = 'application/json';
@@ -79,8 +81,7 @@ function req(url: string, opts: { method?: string; withAccess?: boolean; body?: 
     headers,
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
-  const locals = 'locals' in opts ? opts.locals : { runtime: { env } };
-  return { request, locals } as Record<string, unknown>;
+  return { request } as Record<string, unknown>;
 }
 
 describe('GET /api/operator/leads/:id', () => {
@@ -90,7 +91,7 @@ describe('GET /api/operator/leads/:id', () => {
   });
 
   it('503s when not configured', async () => {
-    const res = await getLead({ ...req('https://x/api/operator/leads/lead-1', { locals: {} }), params: { id: 'lead-1' }, clientAddress: '203.0.113.1' } as never);
+    const res = await getLead({ ...req('https://x/api/operator/leads/lead-1', { env: {} }), params: { id: 'lead-1' }, clientAddress: '203.0.113.1' } as never);
     expect(res.status).toBe(503);
   });
 

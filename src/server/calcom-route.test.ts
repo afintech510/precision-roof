@@ -6,6 +6,7 @@ import type { D1Database } from '@cloudflare/workers-types';
 import type { SqlParam } from '../db/executor';
 import { POST, GET } from '../pages/api/webhooks/calcom';
 import { computeCalcomSignature } from './calcom-signature';
+import { __setEnv } from '../test/cf-workers-stub';
 
 // Route-level test for the /api/webhooks/calcom adapter: signs a fixture body
 // with the same secret the route expects, backed by a fake D1 over node:sqlite
@@ -55,7 +56,8 @@ beforeEach(() => {
   env = { OP_STORE: fakeD1(db), CALCOM_WEBHOOK_SECRET: SECRET };
 });
 
-function ctx(body: string, opts: { signature?: string; locals?: unknown } = {}) {
+function ctx(body: string, opts: { signature?: string; env?: unknown } = {}) {
+  __setEnv(('env' in opts ? opts.env : env) as Record<string, unknown>);
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (opts.signature) headers['x-cal-signature-256'] = opts.signature;
   const request = new Request('https://premiumroofsolutions.com/api/webhooks/calcom', {
@@ -63,18 +65,17 @@ function ctx(body: string, opts: { signature?: string; locals?: unknown } = {}) 
     headers,
     body,
   });
-  const locals = 'locals' in opts ? opts.locals : { runtime: { env } };
-  return { request, locals } as never;
+  return { request } as never;
 }
 
 describe('POST /api/webhooks/calcom', () => {
   it('503s when no runtime env is present', async () => {
-    const res = await POST(ctx('{}', { locals: {} }));
+    const res = await POST(ctx('{}', { env: {} }));
     expect(res.status).toBe(503);
   });
 
   it('503s when the webhook secret is not configured', async () => {
-    const res = await POST(ctx('{}', { locals: { runtime: { env: { OP_STORE: fakeD1(db) } } } }));
+    const res = await POST(ctx('{}', { env: { OP_STORE: fakeD1(db) } }));
     expect(res.status).toBe(503);
   });
 

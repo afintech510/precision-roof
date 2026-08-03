@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { createRepositories } from '../../../db/repositories';
 import { d1Executor } from '../../../db/executor';
 import { handleSanityPublish, verifySanitySignature } from '../../../server/sanity-publish';
@@ -10,9 +11,8 @@ import { json } from '../../../server/http';
 // effect; a redelivery is idempotent (handled by the core via webhook_events).
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime?.env;
-  if (!env?.OP_STORE || !env.PRICING_KV) return json({ error: 'not_configured' }, 503);
+export const POST: APIRoute = async ({ request }) => {
+  if (!env.OP_STORE || !env.PRICING_KV) return json({ error: 'not_configured' }, 503);
 
   const secret = env.SANITY_WEBHOOK_SECRET;
   if (!secret) return json({ error: 'not_configured' }, 503);

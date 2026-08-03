@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
 import { createRepositories } from '../../../db/repositories';
 import { d1Executor } from '../../../db/executor';
 import { handleCalcomWebhook, type CalcomWebhook } from '../../../server/calcom';
@@ -10,9 +11,8 @@ import { json } from '../../../server/http';
 // (idempotent by uid+trigger) do the rest.
 export const prerender = false;
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime?.env;
-  if (!env?.OP_STORE) return json({ error: 'not_configured' }, 503);
+export const POST: APIRoute = async ({ request }) => {
+  if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
 
   const secret = env.CALCOM_WEBHOOK_SECRET;
   if (!secret) return json({ error: 'not_configured' }, 503);
