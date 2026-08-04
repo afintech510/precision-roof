@@ -1,0 +1,131 @@
+---
+// Cal.com booking facade (spec §3.2, §4, §7.3; BUILDPLAN Phase 05a Task 1;
+// F-008/F-015). Interaction-loaded: nothing from cal.com/app.cal.com loads
+// until the visitor clicks "Book online instantly", showing an immediate
+// loading affordance while it does — and the phone CTA sits alongside it the
+// whole time, so a slow load (or a load that fails) never reads as a dead
+// button [C2 ADVOCATE-011]. When `calcomLink` isn't configured yet (no
+// Cal.com account exists — see README known gaps), this renders the same
+// honest "coming soon, call us" card the /financing/ facade uses instead of
+// pretending a button works.
+interface Props {
+  calcomLink?: string;
+  phone: string;
+  phoneHref: string;
+}
+const { calcomLink, phone, phoneHref } = Astro.props;
+const hasLink = Boolean(calcomLink);
+---
+<div class="calcom-facade card" id="calcom-facade" data-calcom-link={calcomLink ?? ''}>
+  <h3>Prefer to book online?</h3>
+  {hasLink ? (
+    <>
+      <p class="muted">Pick a time that works for you — no phone tag.</p>
+      <div class="cf-actions">
+        <button type="button" class="btn btn-primary cf-trigger" id="cf-trigger">Book online instantly</button>
+        <a class="btn btn-ghost" href={phoneHref}>Call {phone}</a>
+      </div>
+      <div class="cf-status" id="cf-status" role="status" aria-live="polite" aria-atomic="true"></div>
+      <div class="cf-embed" id="cf-embed" tabindex="-1" hidden></div>
+    </>
+  ) : (
+    <>
+      <p class="muted">Online booking is coming soon. Call us or use the form below to get on the schedule today.</p>
+      <a class="btn btn-primary" href={phoneHref}>Call {phone}</a>
+    </>
+  )}
+</div>
+
+<script>
+  import { parseGaClientId } from '../lib/ga-client-id';
+
+  // Cal.com's documented embed-snippet loader: queues API calls made before
+  // embed.js finishes loading instead of dropping them. Vendored inline
+  // (no <script src> until the visitor opts in) rather than imported — it's
+  // a third-party global bootstrap, not app code.
+  type CalFn = { (...args: unknown[]): void; loaded?: boolean; q?: unknown[]; ns: Record<string, CalFn> };
+  function installCalLoader(win: Window & { Cal?: CalFn }): CalFn {
+    if (win.Cal) return win.Cal;
+    const push = (fn: CalFn, args: unknown[]) => (fn.q = fn.q || []).push(args);
+    const Cal = ((...args: unknown[]) => {
+      const cal = win.Cal as CalFn;
+      if (!cal.loaded) {
+        cal.ns = {};
+        cal.q = cal.q || [];
+        const script = document.createElement('script');
+        script.src = 'https://app.cal.com/embed/embed.js';
+        script.onerror = () => cal.q?.push(['__loadError']);
+        document.head.appendChild(script);
+        cal.loaded = true;
+      }
+      push(cal, args);
+    }) as CalFn;
+    Cal.ns = {};
+    win.Cal = Cal;
+    return Cal;
+  }
+
+  const facade = document.getElementById('calcom-facade') as HTMLElement | null;
+  const trigger = document.getElementById('cf-trigger') as HTMLButtonElement | null;
+  if (facade && trigger) {
+    const calLink = facade.dataset.calcomLink ?? '';
+    const status = document.getElementById('cf-status') as HTMLElement;
+    const embed = document.getElementById('cf-embed') as HTMLElement;
+
+    trigger.addEventListener(
+      'click',
+      () => {
+        trigger.disabled = true;
+        status.textContent = 'Loading the booking calendar…';
+        embed.hidden = false;
+
+        let settled = false;
+        const fallback = () => {
+          if (settled) return;
+          settled = true;
+          embed.hidden = true;
+          status.textContent =
+            'The booking calendar didn’t load. Please call us — the button above still works.';
+          trigger.disabled = false;
+          trigger.textContent = 'Try again';
+        };
+        const timeout = window.setTimeout(fallback, 8000);
+
+        try {
+          const Cal = installCalLoader(window as Window & { Cal?: CalFn });
+          const gaClientId = parseGaClientId(document.cookie);
+          Cal('init', { origin: 'https://cal.com' });
+          Cal('inline', {
+            elementOrSelector: embed,
+            calLink: calLink,
+            config: gaClientId ? { metadata: { gaClientId } } : {},
+          });
+          Cal('on', {
+            action: 'linkReady',
+            callback: () => {
+              if (settled) return;
+              settled = true;
+              window.clearTimeout(timeout);
+              status.textContent = '';
+              embed.focus();
+            },
+          });
+        } catch {
+          window.clearTimeout(timeout);
+          fallback();
+        }
+      },
+      { once: false },
+    );
+  }
+</script>
+
+<style>
+  .calcom-facade { display: grid; gap: 12px; }
+  .calcom-facade h3 { margin: 0; }
+  .cf-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 2px; }
+  .cf-status:empty { display: none; }
+  .cf-status { font-size: .9rem; color: var(--text); }
+  .cf-embed { min-height: 0; }
+  .cf-embed:not([hidden]) { min-height: 480px; margin-top: 4px; }
+</style>

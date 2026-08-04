@@ -10,6 +10,12 @@ export const siteSettings = defineType({
     defineField({ name: 'businessName', type: 'string', validation: (r) => r.required() }),
     defineField({ name: 'licenseNumber', type: 'string', validation: (r) => r.required() }),
     defineField({ name: 'dcaVerifyUrl', title: 'DCA license verify URL', type: 'url' }),
+    defineField({
+      name: 'calcomLink',
+      title: 'Cal.com booking link',
+      description: 'e.g. "premium-roofing/free-inspection". Leave blank until the Cal.com account exists — the booking facade degrades to a phone-CTA card when unset.',
+      type: 'string',
+    }),
     defineField({ name: 'nap', title: 'NAP (name/address/phone)', type: 'object', fields: [
       defineField({ name: 'address', type: 'address' }),
       defineField({ name: 'phone', type: 'string' }),

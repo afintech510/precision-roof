@@ -120,6 +120,12 @@ describe('buildCspDirectives', () => {
     expect(csp).toContain('https://challenges.cloudflare.com');
   });
 
+  it('allow-lists app.cal.com as a script source for the booking facade', () => {
+    const csp = buildCspDirectives();
+    const scriptSrc = csp.split(';').find((d) => d.trim().startsWith('script-src'));
+    expect(scriptSrc).toContain('https://app.cal.com');
+  });
+
   it('allow-lists provided style hashes', () => {
     const csp = buildCspDirectives({ styleHashes: [`'sha256-def456='`] });
     expect(csp).toContain(`style-src 'self' 'sha256-def456='`);

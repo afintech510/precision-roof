@@ -81,7 +81,9 @@ export interface CspOptions {
  * Adam per BUILDPLAN) so it isn't allow-listed until that decision lands. */
 export function buildCspDirectives(opts: CspOptions = {}): string {
   const reportOnly = opts.reportOnly ?? true;
-  const scriptSrc = ["'self'", ...(opts.scriptHashes ?? [])];
+  // https://app.cal.com serves the booking-facade embed loader (spec §7.3);
+  // interaction-loaded, so it never runs on first paint.
+  const scriptSrc = ["'self'", ...(opts.scriptHashes ?? []), 'https://app.cal.com'];
   const styleSrc = ["'self'", ...(opts.styleHashes ?? [])];
   const directives = [
     `default-src 'self'`,

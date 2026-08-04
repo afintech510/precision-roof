@@ -9,6 +9,10 @@ export interface SiteSettings {
   phoneHref: string;
   email?: string;
   addressLine: string;
+  // Cal.com free-tier booking link, e.g. "premium-roofing/free-inspection"
+  // (spec §3.2, Phase 05a Task 1). Unset until Adam creates the Cal.com
+  // account — the booking facade degrades to a phone-CTA-only card when absent.
+  calcomLink?: string;
 }
 
 export interface ServiceLite {

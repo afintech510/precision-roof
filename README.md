@@ -174,6 +174,15 @@ config before assuming which one is canonical.
    credential are configured in the Postmark UI and the secret is set via
    `wrangler secret put`. Same "degrades to 503, never fails closed" shape
    as every other unprovisioned secret here.
+9. **`calcomLink` not set.** `/contact/`'s Cal.com booking facade
+   (`src/components/CalcomFacade.astro` — spec §3.2/§4/§7.3, Phase 05a Task 1:
+   interaction-loaded embed, immediate loading affordance, always-visible
+   phone CTA, GA4 `client_id` forwarding, timeout fallback) is built and
+   wired but renders its honest "coming soon, call us" state until
+   `siteSettings.calcomLink` has a real value — no Cal.com account exists
+   yet. Same "drop-in once Adam provides the value" shape as every other gap
+   here. The `/api/webhooks/calcom` webhook it feeds has been live since
+   `e32c0a5`; this closes the frontend half.
 
 ## How to add a town
 

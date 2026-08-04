@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import LeadForm from '../components/LeadForm.astro';
+import CalcomFacade from '../components/CalcomFacade.astro';
 import { getSite, getServices } from '../lib/content';
 const site = await getSite();
 const services = await getServices();
@@ -18,7 +19,12 @@ const services = await getServices();
 
       <div id="lf-no-js-banner" class="banner" hidden></div>
 
+      <div class="cal-wrap">
+        <CalcomFacade calcomLink={site.calcomLink} phone={site.phone} phoneHref={site.phoneHref} />
+      </div>
+
       <div class="form-wrap">
+        <p class="or-divider muted">Or request a callback instead</p>
         <LeadForm services={services} phone={site.phone} phoneHref={site.phoneHref} />
       </div>
 
@@ -58,7 +64,9 @@ const services = await getServices();
   h1 { margin: 12px 0 14px; }
   .contact-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin: 24px 0 14px; }
   .lic { color: var(--good); font-weight: 700; font-size: .9rem; margin-top: 28px; }
+  .cal-wrap { margin: 22px 0; }
   .form-wrap { margin-top: 8px; }
+  .or-divider { font-weight: 700; font-size: .85rem; text-transform: uppercase; letter-spacing: .08em; margin: 0 0 14px; }
   .banner {
     padding: 14px 18px; border-radius: var(--radius-sm); background: #eaf6ee; color: var(--ink);
     border: 1px solid #bfe3c9; font-weight: 600; margin-bottom: 18px;
