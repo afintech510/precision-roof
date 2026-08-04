@@ -29,6 +29,11 @@ declare global {
       SANITY_API_TOKEN?: string;
       RESEND_TOKEN_SECRET?: string;
       POSTMARK_SERVER_TOKEN?: string;
+      // Phase 09 — review-request engine (spec §5.5, F-013).
+      EMAIL_FROM_ADDRESS?: string;
+      UNSUBSCRIBE_TOKEN_SECRET?: string;
+      REVIEW_URL?: string;
+      SITE_ORIGIN?: string;
       CALCOM_WEBHOOK_SECRET?: string;
       CALLRAIL_WEBHOOK_SECRET?: string;
       TWILIO_AUTH_TOKEN?: string;

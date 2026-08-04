@@ -354,6 +354,13 @@ export interface ReviewRequestInput {
 /** `customer_contact` is NOT NULL, so anonymization writes this sentinel rather than NULL. */
 export const REDACTED_CONTACT = '[redacted]';
 
+export interface ReviewRequestRow {
+  id: string;
+  job_id: string;
+  customer_contact: string;
+  channel: Channel;
+}
+
 export function reviewRequestRepo(db: SqlExecutor) {
   return {
     async createPending(r: ReviewRequestInput): Promise<void> {
@@ -371,6 +378,33 @@ export function reviewRequestRepo(db: SqlExecutor) {
         [now, id],
       );
       return r.changes === 1;
+    },
+
+    /** Suppressed contact: transitions pending → suppressed, never sent. */
+    async markSuppressed(id: string): Promise<boolean> {
+      const r = await db.run(
+        `UPDATE review_request SET status = 'suppressed' WHERE id = ? AND status = 'pending'`,
+        [id],
+      );
+      return r.changes === 1;
+    },
+
+    /** Permanent send failure (no retry — matches message_log's failed_permanent). */
+    async markFailed(id: string): Promise<boolean> {
+      const r = await db.run(
+        `UPDATE review_request SET status = 'failed' WHERE id = ? AND status = 'pending'`,
+        [id],
+      );
+      return r.changes === 1;
+    },
+
+    /** Rows the cron sweep still owes an ask. Oldest first (fairness). */
+    listPending(limit: number): Promise<ReviewRequestRow[]> {
+      return db.all<ReviewRequestRow>(
+        `SELECT id, job_id, customer_contact, channel FROM review_request
+         WHERE status = 'pending' ORDER BY requested_at ASC LIMIT ?`,
+        [limit],
+      );
     },
 
     /** Anonymize the PII contact column past retention (spec §8, C2-031). Returns rows changed. */

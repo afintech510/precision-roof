@@ -122,4 +122,22 @@ describe('reviewRequestRepo — send once', () => {
     expect(await repos.reviewRequest.markSent('r1', 10)).toBe(true);
     expect(await repos.reviewRequest.markSent('r1', 11)).toBe(false);
   });
+
+  it('markSuppressed and markFailed are also one-shot CAS from pending', async () => {
+    await repos.reviewRequest.createPending({ id: 'r2', jobId: 'job1', customerContact: '+15165550100', channel: 'sms', requestedAt: 1 });
+    await repos.reviewRequest.createPending({ id: 'r3', jobId: 'job1', customerContact: 'x@example.com', channel: 'email', requestedAt: 2 });
+    expect(await repos.reviewRequest.markSuppressed('r2')).toBe(true);
+    expect(await repos.reviewRequest.markSuppressed('r2')).toBe(false); // already suppressed, not pending
+    expect(await repos.reviewRequest.markFailed('r3')).toBe(true);
+    expect(await repos.reviewRequest.markSent('r3', 10)).toBe(false); // already failed, not pending
+  });
+
+  it('listPending returns only pending rows, oldest first', async () => {
+    await repos.reviewRequest.createPending({ id: 'r4', jobId: 'job2', customerContact: '+15165550200', channel: 'sms', requestedAt: 20 });
+    await repos.reviewRequest.createPending({ id: 'r5', jobId: 'job2', customerContact: '+15165550201', channel: 'sms', requestedAt: 10 });
+    await repos.reviewRequest.createPending({ id: 'r6', jobId: 'job2', customerContact: '+15165550202', channel: 'sms', requestedAt: 30 });
+    await repos.reviewRequest.markSent('r6', 40);
+    const rows = await repos.reviewRequest.listPending(10);
+    expect(rows.map((r) => r.id)).toEqual(['r5', 'r4']);
+  });
 });
