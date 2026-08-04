@@ -4,12 +4,17 @@ import { createRepositories } from '../../../../db/repositories';
 import { d1Executor } from '../../../../db/executor';
 import { authorizeResend } from '../../../../server/dashboard';
 import { requireOperatorAccess } from '../../../../server/access';
+import { SPEED_TO_LEAD_BODY } from '../../../../server/slo-sweep';
 import { json } from '../../../../server/http';
 
 // POST /api/operator/resend (spec §7.1). Cloudflare Access-gated; performs the
-// single-use claim on the emailed resend token via `authorizeResend`. The
-// actual send goes through the Phase-05b DO+Queue dispatch path, which does
-// not exist yet — authorization succeeds and is recorded, but nothing is sent.
+// single-use claim on the emailed resend token via `authorizeResend`, then
+// dispatches through the same DO-reserve + Queue-enqueue path as /api/lead
+// (spec: "identical ... primary send path") — never a synchronous Twilio call
+// here, same as intake. The DO/Queue aren't live-bound in wrangler.toml yet
+// (see the addendum in docs/build/PROPOSAL-api-wiring.md), so `env.SMS_AUTHORITY`/
+// `env.SMS_QUEUE` are undefined today and this degrades to `dispatched: false`
+// exactly like /api/lead does — never fails the request over an unwired binding.
 export const prerender = false;
 
 interface ResendBody {
@@ -38,10 +43,25 @@ export const POST: APIRoute = async ({ request }) => {
     return json(auth, auth.status === 'replayed' ? 409 : 401);
   }
 
-  // BLOCKED: 05b send path — the DO+Queue SMS dispatch doesn't exist yet.
-  // Authorization is single-use-claimed (see resend_token) so a retry after
-  // 05b lands will need a freshly minted token, not a replay of this one.
-  return json({ ...auth, dispatched: false }, 202);
+  // Authorization is single-use-claimed (see resend_token) regardless of
+  // dispatch outcome below — a stranded reservation here is exactly what
+  // slo-sweep's `no_reservation` fallback path picks back up.
+  const lead = await repos.lead.getById(auth.claims.leadId);
+  let dispatched = false;
+  if (lead && env.SMS_AUTHORITY && env.SMS_QUEUE) {
+    const stub = env.SMS_AUTHORITY.get(env.SMS_AUTHORITY.idFromName('global'));
+    const reservation = await stub.reserve(lead.phone_e164, lead.id);
+    if (reservation.allow) {
+      await env.SMS_QUEUE.send({
+        leadId: lead.id,
+        phoneE164: lead.phone_e164,
+        body: SPEED_TO_LEAD_BODY,
+        allowToken: reservation.token,
+      });
+      dispatched = true;
+    }
+  }
+  return json({ ...auth, dispatched }, 202);
 };
 
 export const GET: APIRoute = () => json({ error: 'method_not_allowed' }, 405);

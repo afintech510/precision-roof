@@ -9,6 +9,9 @@ import { GET as getFailedSends } from '../pages/api/operator/failed-sends';
 import { GET as getConfirm } from '../pages/api/operator/resend/confirm';
 import { POST as postResend } from '../pages/api/operator/resend/index';
 import { mintResendToken } from './dashboard';
+import type { ReserveOutcome } from './sms-authority';
+import type { SmsDispatchMessage } from './sms-dispatch';
+import { SPEED_TO_LEAD_BODY } from './slo-sweep';
 import { __setEnv } from '../test/cf-workers-stub';
 
 // Route-level tests for /api/operator/*: Cloudflare Access gate (Cf-Access-
@@ -47,6 +50,20 @@ function fakeD1(db: InstanceType<typeof DatabaseSync>): D1Database {
       return stmt;
     },
   } as unknown as D1Database;
+}
+
+function fakeSmsAuthority(reserveResult: ReserveOutcome) {
+  return {
+    idFromName: (name: string) => name,
+    get: () => ({
+      reserve: async (): Promise<ReserveOutcome> => reserveResult,
+      claimSend: async () => ({ allow: true as const }),
+    }),
+  };
+}
+
+function fakeSmsQueue(sink: SmsDispatchMessage[]) {
+  return { send: async (msg: SmsDispatchMessage) => { sink.push(msg); } };
 }
 
 const RESEND_SECRET = 'test-resend-secret';
@@ -170,6 +187,26 @@ describe('POST /api/operator/resend', () => {
     const out = (await res.json()) as { status: string; dispatched: boolean };
     expect(res.status).toBe(202);
     expect(out.status).toBe('ok');
+    expect(out.dispatched).toBe(false);
+  });
+
+  it('dispatches through the DO+Queue path and enqueues the speed-to-lead body when the bindings are live', async () => {
+    const sent: SmsDispatchMessage[] = [];
+    const withSms = { ...env, SMS_AUTHORITY: fakeSmsAuthority({ allow: true, token: 'tok-resend-1' }), SMS_QUEUE: fakeSmsQueue(sent) };
+    const { token } = await mintResendToken({ leadId: 'lead-1', messageLogId: 'msg-1' }, { secret: RESEND_SECRET, now: Date.now(), newId: () => 'jti-5' });
+    const res = await postResend(req('https://x/api/operator/resend', { method: 'POST', body: { token }, env: withSms }) as never);
+    const out = (await res.json()) as { status: string; dispatched: boolean };
+    expect(res.status).toBe(202);
+    expect(out.dispatched).toBe(true);
+    expect(sent).toEqual([{ leadId: 'lead-1', phoneE164: '+15165550100', body: SPEED_TO_LEAD_BODY, allowToken: 'tok-resend-1' }]);
+  });
+
+  it('reports the blocked dispatch when the DO reservation is denied', async () => {
+    const withSms = { ...env, SMS_AUTHORITY: fakeSmsAuthority({ allow: false, reason: 'suppressed' }), SMS_QUEUE: fakeSmsQueue([]) };
+    const { token } = await mintResendToken({ leadId: 'lead-1', messageLogId: 'msg-1' }, { secret: RESEND_SECRET, now: Date.now(), newId: () => 'jti-6' });
+    const res = await postResend(req('https://x/api/operator/resend', { method: 'POST', body: { token }, env: withSms }) as never);
+    const out = (await res.json()) as { status: string; dispatched: boolean };
+    expect(res.status).toBe(202);
     expect(out.dispatched).toBe(false);
   });
 
