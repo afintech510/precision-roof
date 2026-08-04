@@ -5,6 +5,25 @@ compatibility_flags = ["nodejs_compat"]
 # model, not Pages — the adapter reserves the ASSETS binding). Do NOT set
 # pages_build_output_dir here or wrangler treats it as a Pages project.
 
+# Explicit: adding a [[routes]] entry makes wrangler default workers_dev to
+# false. Keep the workers.dev URL live regardless of custom-domain status —
+# it must never silently go dark as a side effect of an unrelated change.
+workers_dev = true
+
+# Canonical custom domain (2026-08-03): roof.benchworksai.com was previously a
+# Pages custom domain on the separate, static-only `precision-roof` Pages
+# project — moved here so /api/* (quote, lead, webhooks) actually works on
+# the real domain instead of just the workers.dev URL. Attaching this via
+# Workers Custom Domains reassigns the hostname's DNS + routing away from
+# Pages automatically. BLOCKED as of 2026-08-03: Cloudflare rejects the attach
+# while the hostname still has externally-managed DNS records from the Pages
+# custom-domain setup — see memory/session notes, needs the Pages custom
+# domain removed first (dashboard or a Pages:Edit-scoped API call this
+# session's token doesn't have a CLI path for).
+[[routes]]
+pattern = "roof.benchworksai.com"
+custom_domain = true
+
 # Operational store — Cloudflare D1 (spec §1.2, §2.5).
 # Create the database once (pre-flight) and paste the returned id below:
 #   npx wrangler d1 create precision-roof-op
