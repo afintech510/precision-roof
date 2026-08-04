@@ -5,12 +5,13 @@
 export type SitemapCategory = 'towns' | 'services' | 'posts' | 'core';
 
 /** Classifies a built route by content type for the split sitemaps. Detail
- * pages under /areas/ and /services/ get their own category; hub pages
- * (/areas/, /services/) and everything else fall back to `core`. */
+ * pages under /areas/, /services/, and /resources/ get their own category;
+ * hub pages (/areas/, /services/, /resources/) and everything else fall
+ * back to `core`. */
 export function classifyRoute(pathname: string): SitemapCategory {
   if (/^\/areas\/[^/]+\/$/.test(pathname)) return 'towns';
   if (/^\/services\/[^/]+\/$/.test(pathname)) return 'services';
-  if (/^\/blog\/[^/]+\/$/.test(pathname)) return 'posts';
+  if (/^\/resources\/[^/]+\/$/.test(pathname)) return 'posts';
   return 'core';
 }
 

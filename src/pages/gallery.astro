@@ -1,0 +1,41 @@
+---
+// BLOCKED: real job photos come from the Sanity `job` document's `photos`
+// field (sanity/schemaTypes/job.ts), and no jobs are published yet — Phase 09
+// notes this is "naturally gated: no completed jobs exist at launch." Rather
+// than fabricate placeholder "before/after" images that look like real
+// customer work, this page states plainly that photos populate as jobs
+// complete (same non-fabrication stance as the reviews page: no cherry-picked
+// or invented content).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSite, getServices } from '../lib/content';
+const site = await getSite();
+const services = (await getServices()).slice(0, 6);
+---
+<BaseLayout title={`Project Gallery — ${site.businessName}`} description="Photos from completed Suffolk County roofing jobs, added as each project finishes.">
+  <section class="section">
+    <div class="container narrow">
+      <span class="eyebrow">Gallery</span>
+      <h1>Real jobs, real photos — as they're completed</h1>
+      <p class="lede">We'd rather show you nothing than show you stock photos. This page fills in with documented before/after photos from actual Suffolk County jobs as each one wraps — the same policy that keeps our reviews honest.</p>
+      <div class="card placeholder">
+        <p class="muted">Job photos are added here as projects complete. In the meantime, every inspection we do is photo-documented — ask to see the findings on your own roof.</p>
+      </div>
+
+      <h2>What we work on</h2>
+      <div class="stypes">
+        {services.map((s) => <a class="stype" href={`/services/${s.slug}/`}>{s.name}</a>)}
+      </div>
+
+      <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .narrow { max-width: 760px; }
+  h1 { margin: 12px 0 14px; }
+  .placeholder { margin: 22px 0 30px; }
+  h2 { font-size: 1.1rem; margin-bottom: 12px; }
+  .stypes { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 28px; }
+  .stype { padding: 10px 15px; border-radius: 999px; background: #fff; border: 1px solid #cfdae4; font-weight: 600; font-size: .93rem; color: var(--brand); }
+  .stype:hover { background: var(--brand); color: #fff; }
+</style>

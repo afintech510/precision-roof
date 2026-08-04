@@ -65,3 +65,18 @@ export interface Review {
    * src/lib/structured-data.ts `aggregateRating`. */
   lastSyncedAt?: number;
 }
+
+export interface Post {
+  title: string;
+  slug: string;
+  excerpt: string;
+  /** ISO 8601 date, display-ready. */
+  publishedAt: string;
+  /** Paragraphs; mirrors the Sanity `post.body` Portable Text field once
+   * seeded (a renderer swap, not a shape change). */
+  body: string[];
+  /** Slugs into ServiceLite/TownFull — drives blog↔money-page internal
+   * linking (spec §4.4, F-006), finalized as in-body links in Phase 06/10. */
+  relatedServiceSlugs?: string[];
+  relatedTownSlugs?: string[];
+}

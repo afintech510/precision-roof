@@ -1,4 +1,4 @@
-import type { SiteSettings, ServiceLite, TownFull, Review } from './types';
+import type { SiteSettings, ServiceLite, TownFull, Review, Post } from './types';
 
 // Representative content so templates render before Sanity is seeded. Marked
 // clearly as sample; content.ts prefers real Sanity data when available.
@@ -113,6 +113,50 @@ export const sampleTowns: TownFull[] = [
 export const sampleTownNames = [
   'Huntington', 'Smithtown', 'Islip', 'Babylon', 'Brookhaven', 'Bay Shore',
   'Patchogue', 'Commack', 'Port Jefferson', 'Sayville', 'Riverhead', 'Northport',
+];
+
+export const samplePosts: Post[] = [
+  {
+    title: 'How to spot a roof leak before it becomes a ceiling problem',
+    slug: 'how-to-spot-a-roof-leak',
+    excerpt: 'The warning signs — inside and outside — that show up months before a leak reaches your ceiling, and what to do about each one.',
+    publishedAt: '2026-06-02',
+    body: [
+      'Most roof leaks don’t announce themselves with a dramatic drip. By the time water is visible on a ceiling, it has usually been finding its way in for weeks or months.',
+      'Start outside: look for curling, cracked, or missing shingles, especially around chimneys, skylights, and any place two roof planes meet. Flashing — the metal strips sealing those joints — is the single most common failure point we find on inspections.',
+      'Inside, check the attic if you have access. Dark staining on the underside of the roof deck, a musty smell, or insulation that feels damp are all earlier warnings than a ceiling stain.',
+      'If you catch any of these signs, a documented inspection is worth more than guessing. We trace the actual source of the water — not just the visible stain — before we recommend a fix.',
+    ],
+    relatedServiceSlugs: ['roof-leak-repair', 'roof-inspection'],
+    relatedTownSlugs: ['huntington', 'smithtown'],
+  },
+  {
+    title: 'What a Town of Huntington re-roof permit actually involves',
+    slug: 'huntington-reroof-permit-guide',
+    excerpt: 'A plain-language walkthrough of the permit, fee, and timeline for a residential re-roof in Huntington — and when historic-district review applies.',
+    publishedAt: '2026-06-16',
+    body: [
+      'Most full roof replacements in the Town of Huntington require a building permit before work starts. That surprises some homeowners who assume repairs to an existing structure don’t need one — for a full tear-off and re-roof, they do.',
+      'Filing is straightforward: the town accepts e-filed applications or in-person submission, and typical turnaround runs around 10 business days. Fees scale with the size of the job.',
+      'If your home sits near the Old Town / Village Green district, street-visible roof changes may need an additional design review. We check this before we quote, not after a surprise delay.',
+      'None of this needs to be your problem to track. We pull the right permit, file it correctly, and keep the paperwork so you have it later — for a sale, a refinance, or an insurance claim.',
+    ],
+    relatedServiceSlugs: ['roof-replacement'],
+    relatedTownSlugs: ['huntington'],
+  },
+  {
+    title: 'Asphalt shingles vs. metal roofing for Suffolk County homes',
+    slug: 'asphalt-vs-metal-roofing-suffolk-county',
+    excerpt: 'Cost, lifespan, and coastal-wind performance — an honest comparison for homeowners weighing a full replacement.',
+    publishedAt: '2026-07-08',
+    body: [
+      'Asphalt shingles remain the most common re-roof choice on Long Island, and for good reason: lower upfront cost, a wide range of colors, and a straightforward install most crews can complete in a day or two.',
+      'Standing-seam metal costs more up front but typically lasts two to three times longer and handles wind uplift better — a real factor for south-shore homes exposed to coastal gusts and salt air.',
+      'The right answer depends on how long you plan to stay in the home, your roof’s pitch and exposure, and your budget today versus over 20 years. We walk through the itemized numbers for your actual roof rather than a generic average.',
+    ],
+    relatedServiceSlugs: ['roof-replacement', 'metal-roofing'],
+    relatedTownSlugs: ['babylon'],
+  },
 ];
 
 export const sampleReviews: Review[] = [

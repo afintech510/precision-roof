@@ -1,0 +1,70 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, getServices, getTowns, getSite } from '../../lib/content';
+import { breadcrumbs, articleSchema } from '../../lib/structured-data';
+import type { Post } from '../../lib/types';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}
+
+interface Props { post: Post }
+const { post } = Astro.props;
+const site = await getSite();
+const services = await getServices();
+const towns = await getTowns();
+const relatedServices = services.filter((s) => post.relatedServiceSlugs?.includes(s.slug));
+const relatedTowns = towns.filter((t) => post.relatedTownSlugs?.includes(t.slug));
+const publishedLabel = new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+const schema = [
+  breadcrumbs([
+    { name: 'Home', path: '/' },
+    { name: 'Resources', path: '/resources/' },
+    { name: post.title, path: `/resources/${post.slug}/` },
+  ]),
+  articleSchema(post, site),
+];
+---
+<BaseLayout title={`${post.title} — ${site.businessName}`} description={post.excerpt} schema={schema}>
+  <nav class="crumbs container" aria-label="Breadcrumb">
+    <a href="/">Home</a> <span aria-hidden="true">/</span>
+    <a href="/resources/">Resources</a> <span aria-hidden="true">/</span>
+    <span>{post.title}</span>
+  </nav>
+
+  <article class="section">
+    <div class="container narrow">
+      <span class="eyebrow">Roofing guide</span>
+      <h1>{post.title}</h1>
+      <time class="pdate muted" datetime={post.publishedAt}>{publishedLabel}</time>
+      <div class="body">
+        {post.body.map((para) => <p>{para}</p>)}
+      </div>
+
+      {(relatedServices.length > 0 || relatedTowns.length > 0) && (
+        <aside class="related">
+          <h2>Related</h2>
+          <ul>
+            {relatedServices.map((s) => <li><a href={`/services/${s.slug}/`}>{s.name}</a></li>)}
+            {relatedTowns.map((t) => <li><a href={`/areas/${t.slug}/`}>Roofing in {t.name}</a></li>)}
+          </ul>
+        </aside>
+      )}
+
+      <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+    </div>
+  </article>
+</BaseLayout>
+<style>
+  .crumbs { padding-block: 14px 0; font-size: .85rem; color: var(--muted); }
+  .crumbs a { color: var(--muted); }
+  .crumbs a:hover { color: var(--brand); }
+  .narrow { max-width: 720px; }
+  h1 { margin: 12px 0 8px; }
+  .pdate { display: block; font-size: .82rem; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 18px; }
+  .body p { margin-bottom: 16px; }
+  .related { margin: 8px 0 26px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; }
+  .related h2 { font-size: 1rem; margin-bottom: 10px; }
+  .related ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+</style>

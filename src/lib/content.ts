@@ -13,6 +13,8 @@ export const getTownNames = async () => sample.sampleTownNames;
 export const getReviews = async () => sample.sampleReviews;
 export const getTown = async (slug: string) => sample.sampleTowns.find((t) => t.slug === slug);
 export const getService = async (slug: string) => sample.sampleServices.find((s) => s.slug === slug);
+export const getPosts = async () => sample.samplePosts;
+export const getPost = async (slug: string) => sample.samplePosts.find((p) => p.slug === slug);
 
 export const formatUsd = (n: number) => `$${n.toLocaleString('en-US')}`;
 

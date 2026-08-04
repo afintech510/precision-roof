@@ -8,13 +8,14 @@ describe('classifyRoute', () => {
   it('classifies service detail pages', () => {
     expect(classifyRoute('/services/roof-replacement/')).toBe('services');
   });
-  it('classifies blog posts', () => {
-    expect(classifyRoute('/blog/how-to-spot-a-leak/')).toBe('posts');
+  it('classifies resource posts', () => {
+    expect(classifyRoute('/resources/how-to-spot-a-leak/')).toBe('posts');
   });
   it('classifies hub and core pages as core', () => {
     expect(classifyRoute('/')).toBe('core');
     expect(classifyRoute('/areas/')).toBe('core');
     expect(classifyRoute('/services/')).toBe('core');
+    expect(classifyRoute('/resources/')).toBe('core');
     expect(classifyRoute('/about/')).toBe('core');
   });
 });

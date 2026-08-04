@@ -1,4 +1,4 @@
-import type { SiteSettings, ServiceLite, FaqItem, Review } from './types';
+import type { SiteSettings, ServiceLite, FaqItem, Review, Post } from './types';
 
 // JSON-LD builders (spec §2.2/§4, F-007). Pure functions returning plain
 // objects so they unit-test without a DOM. Review/AggregateRating is emitted
@@ -56,6 +56,19 @@ export function faqPage(faqs: FaqItem[]) {
       name: f.question,
       acceptedAnswer: { '@type': 'Answer', text: f.answer },
     })),
+  };
+}
+
+export function articleSchema(post: Post, site: SiteSettings) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.publishedAt,
+    author: { '@type': 'Organization', name: site.businessName, '@id': `${SITE}/#business` },
+    publisher: { '@type': 'Organization', name: site.businessName, '@id': `${SITE}/#business` },
+    mainEntityOfPage: abs(`/resources/${post.slug}/`),
   };
 }
 

@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, getSite } from '../../lib/content';
+import { breadcrumbs } from '../../lib/structured-data';
+
+const posts = await getPosts();
+const site = await getSite();
+const sorted = [...posts].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
+const schema = [breadcrumbs([{ name: 'Home', path: '/' }, { name: 'Resources', path: '/resources/' }])];
+---
+<BaseLayout title={`Roofing Guides & Resources — ${site.businessName}`} description="Plain-language roofing guides for Suffolk County homeowners: leak detection, permits, and material comparisons." schema={schema}>
+  <section class="section">
+    <div class="container">
+      <span class="eyebrow">Resources</span>
+      <h1>Roofing guides for Suffolk County homeowners</h1>
+      <p class="lede">Honest, practical write-ups — the same information we'd give a neighbor, not a sales pitch.</p>
+      <div class="grid grid-2 grid-3 pgrid">
+        {sorted.map((post) => (
+          <a class="post card" href={`/resources/${post.slug}/`}>
+            <time class="pdate muted" datetime={post.publishedAt}>{new Date(post.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</time>
+            <h3>{post.title}</h3>
+            <p class="muted">{post.excerpt}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+<style>
+  .pgrid { margin-top: 26px; }
+  .post { display: flex; flex-direction: column; transition: transform .1s, box-shadow .15s, border-color .15s; }
+  .post:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: #d8cdbb; }
+  .pdate { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .post h3 { margin-bottom: 8px; }
+  .post p { font-size: .93rem; }
+</style>
