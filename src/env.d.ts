@@ -30,6 +30,7 @@ declare global {
       RESEND_TOKEN_SECRET?: string;
       POSTMARK_SERVER_TOKEN?: string;
       CALCOM_WEBHOOK_SECRET?: string;
+      CALLRAIL_WEBHOOK_SECRET?: string;
       TWILIO_AUTH_TOKEN?: string;
       TWILIO_ACCOUNT_SID?: string;
       TWILIO_FROM_NUMBER?: string;
