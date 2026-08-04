@@ -117,6 +117,31 @@ function req(body: Record<string, unknown>, opts: { env?: unknown } = {}) {
   return { request, clientAddress: '203.0.113.1' } as never;
 }
 
+// A native <form method="post"> submit (JS disabled) — application/
+// x-www-form-urlencoded, checkbox present only when checked (value "on").
+function nativeReq(fields: Record<string, string>) {
+  __setEnv(env as Record<string, unknown>);
+  const body = new URLSearchParams(fields).toString();
+  const request = new Request(ROUTE_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  return { request, clientAddress: '203.0.113.1' } as never;
+}
+
+const validFormFields = (over: Record<string, string> = {}): Record<string, string> => ({
+  name: 'Pat Doe',
+  phoneE164: '+15165550100',
+  email: 'pat@example.com',
+  zip: '11743',
+  serviceSlug: 'roof-repair',
+  consentGiven: 'on',
+  consentVersion: CURRENT_CONSENT_VERSION,
+  turnstileToken: 'good-token',
+  ...over,
+});
+
 describe('POST /api/lead', () => {
   it('503s when no runtime env is present', async () => {
     const res = await POST(req(validBody(), { env: {} }));
@@ -175,6 +200,25 @@ describe('POST /api/lead', () => {
       const res = await POST(req(validBody({ phoneE164: `+1516555010${i}` })));
       expect(res.status).toBe(201);
     }
+  });
+
+  it('303-redirects a native form-urlencoded submission back to /contact/ with the outcome, instead of raw JSON', async () => {
+    const res = await POST(nativeReq(validFormFields()));
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe('/contact/?lead=created');
+    expect(sent).toHaveLength(1); // the lead was still fully captured + dispatched
+  });
+
+  it('accepts the native checkbox value "on" as consent (not the JSON boolean true)', async () => {
+    const res = await POST(nativeReq(validFormFields()));
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).not.toContain('malformed');
+  });
+
+  it('303-redirects to a malformed outcome with the offending field on invalid native input', async () => {
+    const res = await POST(nativeReq(validFormFields({ phoneE164: 'not-a-phone' })));
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe('/contact/?lead=malformed&field=phone');
   });
 
   it('429s past the per-IP cap once RATE_LIMIT_KV is bound', async () => {

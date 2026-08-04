@@ -67,6 +67,15 @@ function normalizeEmail(raw: unknown): string | null | undefined {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw.trim()) ? raw.trim() : null;
 }
 
+/** A native (JS-disabled) `<form method="post">` submits a checked checkbox
+ * as the string `"on"` (or its `value=`, if set) via `application/
+ * x-www-form-urlencoded` — never the JSON boolean `true` the fetch-enhanced
+ * path sends. Both must count as consent given, or the native-POST fallback
+ * (spec §4/§9) would silently reject every no-JS submission. */
+function normalizeConsent(raw: unknown): boolean {
+  return raw === true || raw === 'on' || raw === 'true' || raw === '1';
+}
+
 export interface LeadIntakeRequest {
   name?: unknown;
   phoneE164?: unknown;
@@ -130,7 +139,7 @@ export async function handleLeadIntake(
   }
   const service = req.serviceSlug;
 
-  if (req.consentGiven !== true) return { outcome: 'malformed', status: 400, field: 'consent' };
+  if (!normalizeConsent(req.consentGiven)) return { outcome: 'malformed', status: 400, field: 'consent' };
   const consentVersion = typeof req.consentVersion === 'string' ? req.consentVersion : CURRENT_CONSENT_VERSION;
   const consentText = CONSENT_TEXT[consentVersion];
   if (!consentText) return { outcome: 'malformed', status: 400, field: 'consent_version' };

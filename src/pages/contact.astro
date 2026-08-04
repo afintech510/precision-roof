@@ -1,27 +1,66 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getSite } from '../lib/content';
+import LeadForm from '../components/LeadForm.astro';
+import { getSite, getServices } from '../lib/content';
 const site = await getSite();
+const services = await getServices();
 ---
 <BaseLayout title={`Book a Free Inspection — ${site.businessName}`} description="Book a free, documented roof inspection anywhere in western & central Suffolk County.">
   <section class="section">
     <div class="container narrow">
       <span class="eyebrow">Book a free inspection</span>
       <h1>Get a straight answer on your roof</h1>
-      <p class="lede">No pressure, no “today only” pricing. Call us or request a free inspection and you’ll get a documented assessment with itemized pricing in writing.</p>
+      <p class="lede">No pressure, no “today only” pricing. Request a free inspection below and you’ll get a documented assessment with itemized pricing in writing — or just call.</p>
       <div class="contact-actions">
-        <a class="btn btn-primary" href={site.phoneHref}>Call {site.phone}</a>
+        <a class="btn btn-ghost" href={site.phoneHref}>Call {site.phone}</a>
         <span class="muted">Mon–Sat · Serving 12 Suffolk towns</span>
       </div>
-      <p class="note muted">A full 3-step booking form (ZIP → service → contact) with speed-to-lead text-back is wired in a later build phase. For now, a call is fastest.</p>
+
+      <div id="lf-no-js-banner" class="banner" hidden></div>
+
+      <div class="form-wrap">
+        <LeadForm services={services} phone={site.phone} phoneHref={site.phoneHref} />
+      </div>
+
       <p class="lic tnum">✓ {site.licenseNumber} · Fully insured</p>
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  // No-JS fallback confirmation (spec §4/§9): /api/lead redirects a native
+  // form POST back here with the outcome in the query string, since a
+  // JS-disabled browser can't render the JSON response inline the way the
+  // enhanced LeadForm does. The enhanced form never triggers a real
+  // navigation (it preventDefault()s), so this only ever fires for the
+  // true no-JS path.
+  const params = new URLSearchParams(location.search);
+  const lead = params.get('lead');
+  if (lead) {
+    const banner = document.getElementById('lf-no-js-banner');
+    if (banner) {
+      const MESSAGES: Record<string, string> = {
+        created: 'Request received — we just texted you. We’ll also call shortly.',
+        accepted: 'Request received — we’ll call you shortly.',
+        malformed: 'We couldn’t read one of the fields — please check the form and try again.',
+        error: 'Something went wrong on our end. Please call us instead.',
+      };
+      banner.textContent = MESSAGES[lead] ?? MESSAGES.error;
+      banner.hidden = false;
+      banner.setAttribute('role', 'status');
+    }
+    history.replaceState(null, '', location.pathname);
+  }
+</script>
+
 <style>
   .narrow { max-width: 720px; }
   h1 { margin: 12px 0 14px; }
   .contact-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin: 24px 0 14px; }
-  .note { font-size: .9rem; margin-bottom: 18px; }
-  .lic { color: var(--good); font-weight: 700; font-size: .9rem; }
+  .lic { color: var(--good); font-weight: 700; font-size: .9rem; margin-top: 28px; }
+  .form-wrap { margin-top: 8px; }
+  .banner {
+    padding: 14px 18px; border-radius: var(--radius-sm); background: #eaf6ee; color: var(--ink);
+    border: 1px solid #bfe3c9; font-weight: 600; margin-bottom: 18px;
+  }
 </style>

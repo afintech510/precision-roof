@@ -7,15 +7,28 @@ import type { ReserveOutcome } from '../../server/sms-authority';
 import type { SmsDispatchMessage } from '../../server/sms-dispatch';
 import { verifyTurnstile } from '../../server/turnstile';
 import { checkRateLimit, rateLimitKey } from '../../server/rate-limit';
-import { json } from '../../server/http';
+import { json, redirect } from '../../server/http';
 
 // POST /api/lead (spec §3.2, F-009/F-012). Thin adapter over the pure
 // `handleLeadIntake` core: verify Turnstile best-effort, bind the DO
 // reservation + Queue enqueue calls, then let the core decide everything
 // else (validation, East-End gate, channel).
+//
+// Native-POST fallback (spec §4/§9): LeadForm.astro's JS enhancement always
+// sends `content-type: application/json`; a plain `<form method="post">`
+// submit (JS disabled) sends `application/x-www-form-urlencoded` instead. We
+// use that distinction to decide the *response* shape too — a no-JS browser
+// following a raw JSON response would just render the JSON as the page,
+// which reads as broken even though the lead was captured fine. Redirect it
+// back to /contact/ with the outcome in the query string instead.
 export const prerender = false;
 
 type LeadBody = LeadIntakeRequest & { turnstileToken?: unknown };
+
+function isNativeFormSubmission(request: Request): boolean {
+  const ct = request.headers.get('content-type') ?? '';
+  return !ct.includes('application/json');
+}
 
 async function parseBody(request: Request): Promise<LeadBody> {
   try {
@@ -33,14 +46,18 @@ async function parseBody(request: Request): Promise<LeadBody> {
 const RATE_LIMIT = { windowMs: 60_000, max: 5 };
 
 export const POST: APIRoute = async ({ request, clientAddress }) => {
-  if (!env.OP_STORE) return json({ error: 'not_configured' }, 503);
+  const native = isNativeFormSubmission(request);
+  const fail = (outcome: string) =>
+    native ? redirect(`/contact/?lead=${outcome}`) : undefined;
+
+  if (!env.OP_STORE) return fail('error') ?? json({ error: 'not_configured' }, 503);
 
   if (env.RATE_LIMIT_KV) {
     const rl = await checkRateLimit(env.RATE_LIMIT_KV, rateLimitKey('lead', clientAddress), {
       ...RATE_LIMIT,
       now: Date.now(),
     });
-    if (!rl.allowed) return json({ error: 'rate_limited', retryAt: rl.resetAt }, 429);
+    if (!rl.allowed) return fail('error') ?? json({ error: 'rate_limited', retryAt: rl.resetAt }, 429);
   }
 
   const body = await parseBody(request);
@@ -72,6 +89,10 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     enqueueSms,
   });
 
+  if (native) {
+    const q = result.outcome === 'malformed' ? `lead=malformed&field=${result.field}` : `lead=${result.outcome}`;
+    return redirect(`/contact/?${q}`);
+  }
   return json(result, result.status);
 };
 

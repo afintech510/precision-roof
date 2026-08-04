@@ -1,0 +1,289 @@
+---
+import type { ServiceLite } from '../lib/types';
+import { CONSENT_TEXT, CURRENT_CONSENT_VERSION } from '../server/lead-intake';
+
+// 3-step lead-capture form (spec §3.2 `POST /api/lead`, F-009/F-012). No
+// framework — a plain progressively-enhanced <form>: baseline HTML shows all
+// three steps at once (so it works fully with JS disabled, native `method=
+// "post" action="/api/lead"` — the route detects the non-JSON content-type
+// and 303-redirects back here instead of rendering raw JSON); a page-load
+// script then collapses it into a stepper and intercepts submit with fetch
+// for the enhanced experience. All fields stay mounted across steps, so
+// values survive back/forward navigation between them (spec §4/§9
+// redundant-entry + WCAG 2.2 requirement) — nothing is ever re-typed.
+interface Props {
+  services: ServiceLite[];
+  phone: string;
+  phoneHref: string;
+}
+const { services, phone, phoneHref } = Astro.props;
+const consentText = CONSENT_TEXT[CURRENT_CONSENT_VERSION];
+---
+<form
+  class="lead-form card"
+  id="lead-form"
+  method="post"
+  action="/api/lead"
+  data-phone={phone}
+  data-phone-href={phoneHref}
+  novalidate
+>
+  <div class="lf-progress" id="lf-progress" role="status" aria-live="polite">Step 1 of 3: Your location &amp; service</div>
+
+  <fieldset class="lf-step" data-step="1">
+    <legend>1. Your location &amp; service</legend>
+    <div class="lf-field">
+      <label for="lf-zip">ZIP code</label>
+      <input id="lf-zip" name="zip" type="text" inputmode="numeric" pattern="\d{5}" maxlength="5" required autocomplete="postal-code" />
+    </div>
+    <div class="lf-field">
+      <label for="lf-service">Service needed</label>
+      <select id="lf-service" name="serviceSlug" required>
+        <option value="">Select a service…</option>
+        {services.map((s) => <option value={s.slug}>{s.name}</option>)}
+      </select>
+    </div>
+    <button type="button" class="btn btn-primary lf-next" data-next="2">Next: Your contact info</button>
+  </fieldset>
+
+  <fieldset class="lf-step" data-step="2">
+    <legend>2. Your contact info</legend>
+    <div class="lf-field">
+      <label for="lf-name">Full name</label>
+      <input id="lf-name" name="name" type="text" required autocomplete="name" />
+    </div>
+    <div class="lf-field">
+      <label for="lf-phone">Phone number</label>
+      <input id="lf-phone" name="phoneE164" type="tel" required autocomplete="tel" placeholder="(631) 555-0100" />
+    </div>
+    <div class="lf-field">
+      <label for="lf-email">Email <span class="muted">(optional)</span></label>
+      <input id="lf-email" name="email" type="email" autocomplete="email" />
+    </div>
+    <div class="lf-actions">
+      <button type="button" class="btn btn-ghost lf-back" data-back="1">Back</button>
+      <button type="button" class="btn btn-primary lf-next" data-next="3">Next: Review</button>
+    </div>
+  </fieldset>
+
+  <fieldset class="lf-step" data-step="3">
+    <legend>3. Review &amp; consent</legend>
+    <div class="lf-review" id="lf-review" aria-live="polite"></div>
+    <label class="lf-consent">
+      <input id="lf-consent" name="consentGiven" type="checkbox" required />
+      <span>{consentText}</span>
+    </label>
+    <input type="hidden" name="consentVersion" value={CURRENT_CONSENT_VERSION} />
+    <div class="lf-actions">
+      <button type="button" class="btn btn-ghost lf-back" data-back="2">Back</button>
+      <button type="submit" class="btn btn-primary lf-submit">Request my free inspection</button>
+    </div>
+  </fieldset>
+
+  <div class="lf-result" id="lf-result" role="status" aria-live="polite" aria-atomic="true"></div>
+</form>
+
+<script>
+  interface LeadResponse {
+    outcome: 'created' | 'accepted' | 'malformed';
+    status?: number;
+    channel?: 'sms' | 'callback';
+    reason?: string;
+    field?: string;
+  }
+
+  const form = document.getElementById('lead-form') as HTMLFormElement | null;
+  if (form) {
+    const steps = Array.from(form.querySelectorAll<HTMLElement>('.lf-step'));
+    const progress = document.getElementById('lf-progress') as HTMLElement;
+    const review = document.getElementById('lf-review') as HTMLElement;
+    const result = document.getElementById('lf-result') as HTMLElement;
+    const submitBtn = form.querySelector('.lf-submit') as HTMLButtonElement;
+    const phone = form.dataset.phone ?? '';
+    const phoneHref = form.dataset.phoneHref ?? '';
+
+    // Baseline HTML shows every step at once (no-JS works); once JS runs we
+    // opt into the stepper — this class gates the CSS that hides inactive steps.
+    form.classList.add('is-stepped');
+
+    const STEP_LABELS: Record<string, string> = {
+      '1': 'Step 1 of 3: Your location & service',
+      '2': 'Step 2 of 3: Your contact info',
+      '3': 'Step 3 of 3: Review & consent',
+    };
+
+    const goTo = (n: string) => {
+      for (const step of steps) step.classList.toggle('active', step.dataset.step === n);
+      progress.textContent = STEP_LABELS[n] ?? '';
+      if (n === '3') renderReview();
+      const active = steps.find((s) => s.dataset.step === n);
+      active?.querySelector<HTMLElement>('input, select')?.focus();
+    };
+
+    const stepValid = (n: string): boolean => {
+      const step = steps.find((s) => s.dataset.step === n);
+      if (!step) return true;
+      const fields = Array.from(step.querySelectorAll('input, select')) as Array<HTMLInputElement | HTMLSelectElement>;
+      for (const f of fields) {
+        if (!f.checkValidity()) {
+          f.reportValidity();
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const field = (name: string) => form.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLSelectElement | null;
+
+    const renderReview = () => {
+      const zip = field('zip')?.value ?? '';
+      const serviceSelect = field('serviceSlug') as HTMLSelectElement | null;
+      const serviceLabel = serviceSelect?.selectedOptions[0]?.textContent ?? '';
+      const name = field('name')?.value ?? '';
+      const phoneVal = field('phoneE164')?.value ?? '';
+      review.textContent = '';
+      const dl = document.createElement('dl');
+      const row = (label: string, value: string) => {
+        const dt = document.createElement('dt');
+        dt.textContent = label;
+        const dd = document.createElement('dd');
+        dd.textContent = value;
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      };
+      row('ZIP', zip);
+      row('Service', serviceLabel);
+      row('Name', name);
+      row('Phone', phoneVal);
+      review.appendChild(dl);
+    };
+
+    for (const btn of form.querySelectorAll<HTMLButtonElement>('.lf-next')) {
+      btn.addEventListener('click', () => {
+        const current = btn.closest<HTMLElement>('.lf-step')?.dataset.step ?? '1';
+        if (!stepValid(current)) return;
+        goTo(btn.dataset.next ?? '1');
+      });
+    }
+    for (const btn of form.querySelectorAll<HTMLButtonElement>('.lf-back')) {
+      btn.addEventListener('click', () => goTo(btn.dataset.back ?? '1'));
+    }
+
+    goTo('1');
+
+    const clearResult = () => {
+      while (result.firstChild) result.removeChild(result.firstChild);
+    };
+    const el = (tag: string, cls?: string, text?: string) => {
+      const node = document.createElement(tag);
+      if (cls) node.className = cls;
+      if (text != null) node.textContent = text;
+      return node;
+    };
+    const callLink = () => {
+      const a = el('a', 'btn btn-primary lf-call', `Call ${phone}`) as HTMLAnchorElement;
+      a.href = phoneHref;
+      return a;
+    };
+
+    const renderSuccess = (r: LeadResponse) => {
+      clearResult();
+      form.hidden = true;
+      progress.hidden = true;
+      if (r.channel === 'sms') {
+        result.appendChild(el('p', 'lf-eyebrow', 'Request received'));
+        result.appendChild(el('p', 'lf-note', 'We just texted you — reply anytime, or watch for our call.'));
+      } else {
+        result.appendChild(el('p', 'lf-eyebrow', 'Request received'));
+        result.appendChild(el('p', 'lf-note', 'We’ve got your info and will call you shortly.'));
+      }
+      result.appendChild(callLink());
+    };
+
+    const renderMalformed = (r: LeadResponse) => {
+      clearResult();
+      result.appendChild(el('p', 'lf-note', 'Please check the highlighted field and try again.'));
+      const fieldToStep: Record<string, string> = {
+        zip: '1', service: '1', name: '2', phone: '2', email: '2', consent: '3', consent_version: '3',
+      };
+      goTo(fieldToStep[r.field ?? ''] ?? '1');
+    };
+
+    const renderNetworkError = () => {
+      clearResult();
+      result.appendChild(el('p', 'lf-eyebrow', 'We couldn’t submit that'));
+      result.appendChild(el('p', 'lf-note', 'Something went wrong reaching us. Please call or try again.'));
+      const actions = el('div', 'lf-actions-inline');
+      actions.appendChild(callLink());
+      const retry = el('button', 'btn btn-ghost lf-retry', 'Try again') as HTMLButtonElement;
+      retry.type = 'button';
+      retry.addEventListener('click', () => form.requestSubmit());
+      actions.appendChild(retry);
+      result.appendChild(actions);
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!stepValid('3')) return;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending…';
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      try {
+        const data = new FormData(form);
+        const body = {
+          name: data.get('name'),
+          phoneE164: data.get('phoneE164'),
+          email: data.get('email') || undefined,
+          zip: data.get('zip'),
+          serviceSlug: data.get('serviceSlug'),
+          consentGiven: data.get('consentGiven') === 'on',
+          consentVersion: data.get('consentVersion'),
+        };
+        const res = await fetch('/api/lead', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+        const r = (await res.json()) as LeadResponse;
+        if (r.outcome === 'malformed') renderMalformed(r);
+        else renderSuccess(r);
+      } catch {
+        renderNetworkError();
+      } finally {
+        clearTimeout(timeout);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Request my free inspection';
+      }
+    });
+  }
+</script>
+
+<style>
+  .lead-form { display: grid; gap: 18px; max-width: 560px; }
+  .lf-progress { font-size: .8rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-700); }
+  .lf-step { border: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  .lead-form.is-stepped .lf-step { display: none; }
+  .lead-form.is-stepped .lf-step.active { display: grid; }
+  .lf-step legend { font-weight: 700; color: var(--ink); padding: 0; margin-bottom: 4px; }
+  .lf-field { display: grid; gap: 6px; }
+  .lf-field label { font-weight: 700; font-size: .9rem; color: var(--ink); }
+  .lf-field input, .lf-field select {
+    font: inherit; padding: 12px 13px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--line); background: var(--paper); color: var(--text);
+    min-height: 48px;
+  }
+  .lf-field input:focus-visible, .lf-field select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .lf-actions, .lf-actions-inline { display: flex; flex-wrap: wrap; gap: 12px; }
+  .lf-review dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0 0 14px; font-size: .95rem; }
+  .lf-review dt { color: var(--muted); }
+  .lf-review dd { margin: 0; color: var(--ink); font-weight: 600; }
+  .lf-consent { display: flex; align-items: flex-start; gap: 10px; font-size: .82rem; color: var(--muted); }
+  .lf-consent input { margin-top: 3px; width: 20px; height: 20px; flex: none; }
+  .lf-result:empty { display: none; }
+  .lf-result { display: grid; gap: 10px; }
+  .lf-eyebrow { font-size: .78rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-700); margin: 0; }
+  .lf-note { font-size: .95rem; margin: 0; color: var(--text); }
+</style>

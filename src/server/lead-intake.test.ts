@@ -180,6 +180,19 @@ describe('handleLeadIntake — malformed input', () => {
     expect(res).toEqual({ outcome: 'malformed', status: 400, field: 'consent' });
   });
 
+  it('400s when consent is absent (native form POST omits an unchecked checkbox entirely)', async () => {
+    const res = await handleLeadIntake(validReq({ consentGiven: undefined }), repos, {}, deps());
+    expect(res).toEqual({ outcome: 'malformed', status: 400, field: 'consent' });
+  });
+
+  it.each(['on', 'true', '1'])(
+    'accepts consent as the string %j (native form-urlencoded checkbox submission)',
+    async (value) => {
+      const res = await handleLeadIntake(validReq({ consentGiven: value }), repos, {}, deps());
+      expect(res.outcome).not.toBe('malformed');
+    },
+  );
+
   it('400s on an unknown consent version', async () => {
     const res = await handleLeadIntake(validReq({ consentVersion: 'v99' }), repos, {}, deps());
     expect(res).toEqual({ outcome: 'malformed', status: 400, field: 'consent_version' });
