@@ -73,10 +73,13 @@ export interface Post {
   /** ISO 8601 date, display-ready. */
   publishedAt: string;
   /** Paragraphs; mirrors the Sanity `post.body` Portable Text field once
-   * seeded (a renderer swap, not a shape change). */
+   * seeded (a renderer swap, not a shape change). Trusted HTML — authored
+   * locally, never user input — so a paragraph may embed `<a>` links to
+   * service/town pages (Phase 10 in-body linking, spec §4.4). Rendered with
+   * `set:html`, matching how Portable Text will render rich text later. */
   body: string[];
   /** Slugs into ServiceLite/TownFull — drives blog↔money-page internal
-   * linking (spec §4.4, F-006), finalized as in-body links in Phase 06/10. */
+   * linking (spec §4.4, F-006), finalized as in-body links in Phase 10. */
   relatedServiceSlugs?: string[];
   relatedTownSlugs?: string[];
 }

@@ -39,7 +39,7 @@ const schema = [
       <h1>{post.title}</h1>
       <time class="pdate muted" datetime={post.publishedAt}>{publishedLabel}</time>
       <div class="body">
-        {post.body.map((para) => <p>{para}</p>)}
+        {post.body.map((para) => <p set:html={para} />)}
       </div>
 
       {(relatedServices.length > 0 || relatedTowns.length > 0) && (
