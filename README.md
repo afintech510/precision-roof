@@ -24,8 +24,12 @@ developer needs to run, test, and deploy the site without archaeology.
 │    /api/lead              → src/server/lead-intake.ts                │
 │    /api/webhooks/calcom   → src/server/calcom.ts                    │
 │    /api/webhooks/twilio   → src/server/twilio.ts                    │
+│    /api/webhooks/callrail → src/server/callrail.ts                  │
+│    /api/webhooks/postmark → src/server/postmark-webhook.ts          │
 │    /api/webhooks/sanity-publish → src/server/sanity-publish.ts       │
+│    /api/webhooks/sanity-job → src/server/sanity-job.ts              │
 │    /api/operator/*        → src/server/dashboard.ts                 │
+│    /unsubscribe           → src/server/unsubscribe.ts               │
 └─────────────────────────────────────────────────────────────────────┘
         │                    │                  │
         ▼                    ▼                  ▼
@@ -154,14 +158,22 @@ config before assuming which one is canonical.
    bucket (not yet in `wrangler.toml`) and a preview-env restore exercise;
    out of scope for a change that can land without provisioning new prod
    infra.
-6. **Phase 05c (CallRail + financing) not started** — needs a live CallRail
-   account, a financing-vendor choice (Acorn vs. Wisetack), and a TCPA
-   consent-basis decision for missed-call text-back automation. All three
-   require Adam's input.
+6. **Phase 05c partially done.** Missed-call text-back
+   (`/api/webhooks/callrail` → `src/server/callrail.ts`) is built, tested,
+   and reuses the 05b send path. Still open: CallRail DNI itself (needs a
+   live CallRail account/tracking numbers) and the Acorn/Wisetack financing
+   facade on `/financing/` (needs a financing-vendor choice + a TCPA
+   consent-basis decision) — both require Adam's input, not more code.
 7. **Sanity not seeded** — every page currently renders from
    `src/lib/sample.ts`. Swapping `src/lib/content.ts` to real
    `@sanity/client` queries is a drop-in change (same return shapes) once
    the dataset has real content.
+8. **`POSTMARK_WEBHOOK_SECRET` not provisioned.** `/api/webhooks/postmark`
+   (Phase 09 Task 3 — bounce/complaint → `(email, address)` suppression) is
+   built and route-tested but inert until the webhook URL + Basic Auth
+   credential are configured in the Postmark UI and the secret is set via
+   `wrangler secret put`. Same "degrades to 503, never fails closed" shape
+   as every other unprovisioned secret here.
 
 ## How to add a town
 

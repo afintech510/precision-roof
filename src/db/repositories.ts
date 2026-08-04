@@ -174,7 +174,7 @@ export function suppressionRepo(db: SqlExecutor) {
 }
 
 // ─── webhook_events ── idempotency ledger [C2-002] ───────────────────────────
-export type WebhookProvider = 'twilio' | 'calcom' | 'sanity_job' | 'sanity_publish' | 'callrail';
+export type WebhookProvider = 'twilio' | 'calcom' | 'sanity_job' | 'sanity_publish' | 'callrail' | 'postmark';
 
 export function webhookEventsRepo(db: SqlExecutor) {
   return {

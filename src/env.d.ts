@@ -31,6 +31,11 @@ declare global {
       POSTMARK_SERVER_TOKEN?: string;
       // Phase 09 — review-request engine (spec §5.5, F-013).
       EMAIL_FROM_ADDRESS?: string;
+      // Phase 09 Task 3 — Postmark bounce/complaint webhook Basic Auth
+      // credential ("user:pass", the same string embedded in the webhook URL
+      // configured in the Postmark UI). Suppresses (email, address) on a hard
+      // bounce or spam complaint — never on a soft/transient bounce.
+      POSTMARK_WEBHOOK_SECRET?: string;
       UNSUBSCRIBE_TOKEN_SECRET?: string;
       REVIEW_URL?: string;
       SITE_ORIGIN?: string;
