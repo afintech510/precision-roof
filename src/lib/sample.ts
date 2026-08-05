@@ -163,10 +163,71 @@ export const sampleTowns: TownFull[] = [
       { question: 'Can older roof decking handle a modern re-roof?', answer: 'Usually, with an inspection first — pre-1950s decking sometimes needs partial replacement, which we call out in writing before any work starts.' },
     ],
   },
+  {
+    name: 'Brookhaven', slug: 'brookhaven', advertisingAllowed: true,
+    blurb: 'Brookhaven is Suffolk’s largest town by land — from Medford’s tree-covered ranches to Shirley’s bay-front streets, we price by your actual hamlet, not a town-wide average.',
+    depth: {
+      buildingDepartment: { streetAddress: '1 Independence Hill, Farmingville, NY 11738', phone: '(631) 451-6444', counterHours: 'Mon–Fri 8:30a–4:30p', filingMethod: 'online portal or in person' },
+      permit: { requiredForReroof: true, fee: '$145 + $6/sq', turnaroundBusinessDays: 12 },
+      historicOverlay: { applies: false },
+      housingStock: { era: '1960s–1990s', type: 'Ranches & colonials', typicalRoofSquares: 20 },
+      localConditions: ['Heavy inland tree canopy in central hamlets', 'South-shore wind exposure in bay-front hamlets'],
+      namedStreets: ['Route 25', 'Woodside Ave', 'Yaphank Ave', 'William Floyd Pkwy'],
+      hamlets: ['Medford', 'Coram', 'Mastic', 'Shirley'],
+      landmarks: ['Brookhaven National Laboratory', 'Wildwood State Park'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'Does the same permit process apply across all of Brookhaven?', answer: 'Yes — one Town of Brookhaven building department handles permits town-wide; typical turnaround is about 12 business days regardless of hamlet.' },
+      { question: 'Does my hamlet affect the roofing spec?', answer: 'It can — bay-front hamlets like Shirley see more wind exposure than inland ones like Coram. We account for it in your written quote.' },
+    ],
+  },
+  {
+    name: 'Patchogue', slug: 'patchogue', advertisingAllowed: true,
+    blurb: 'Patchogue’s walkable downtown core sits right on the Great South Bay — older village homes and salt-air exposure both factor into how we spec your roof.',
+    depth: {
+      buildingDepartment: { streetAddress: '14 Baker St, Patchogue, NY 11772', phone: '(631) 447-3220', counterHours: 'Mon–Fri 9a–4p', filingMethod: 'in person' },
+      permit: { requiredForReroof: true, fee: '$130 base', turnaroundBusinessDays: 10 },
+      historicOverlay: { applies: true, details: 'The downtown historic core near Main St may require design review for street-visible roof changes — we check before we quote.' },
+      housingStock: { era: '1900s–1950s', type: 'Victorians & bungalows', typicalRoofSquares: 16 },
+      localConditions: ['Waterfront salt air near the Patchogue River and Great South Bay', 'Older roof decking common in village-core homes'],
+      namedStreets: ['Main St', 'South Ocean Ave', 'River Ave', 'Waverly Ave'],
+      hamlets: ['North Patchogue', 'East Patchogue border'],
+      landmarks: ['Patchogue Theatre', 'Fire Island Ferry Terminal'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'Is my Patchogue home in the historic district?', answer: 'Blocks near the downtown core sometimes carry design-review requirements for visible roof changes — we verify your address before we quote.' },
+      { question: 'How long does a Village of Patchogue re-roof permit take?', answer: 'Typically about 10 business days, filed in person with the village building department.' },
+    ],
+  },
+  {
+    name: 'Port Jefferson', slug: 'port-jefferson', advertisingAllowed: true,
+    blurb: 'Port Jefferson’s harbor-village homes sit on steep hillside lots with real North Shore wind exposure — access and staging matter here as much as the roof itself.',
+    depth: {
+      buildingDepartment: { streetAddress: '88 North Country Rd, Port Jefferson, NY 11777', phone: '(631) 473-4724', counterHours: 'Mon–Fri 9a–5p', filingMethod: 'in person' },
+      permit: { requiredForReroof: true, fee: '$150 + fees', turnaroundBusinessDays: 12 },
+      historicOverlay: { applies: true, details: 'The Village Historic District near the harbor requires design review for visible roof-material changes.' },
+      housingStock: { era: '1880s–1940s', type: 'Victorians & bungalows on steep terrain', typicalRoofSquares: 15 },
+      localConditions: ['Steep hillside lots complicate access and staging', 'North Shore harbor wind and salt exposure'],
+      namedStreets: ['Main St', 'East Broadway', 'Old Post Rd', 'High St'],
+      hamlets: ['Port Jefferson Station', 'Belle Terre border'],
+      landmarks: ['Port Jefferson Harbor', 'Bridgeport–Port Jefferson Ferry Terminal'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'Does the historic district affect my roof material choices?', answer: 'Near the harbor core, yes — visible roof-material changes may need design review. We confirm this before we quote.' },
+      { question: 'Can you access steep hillside lots safely?', answer: 'Yes — Port Jefferson’s terrain is common for us; staging and access planning are built into the quote, not an add-on surprise.' },
+    ],
+  },
 ];
 
 // Full launch set (western/central publish first); detailed pages exist for the
-// west batch (Phase 03b) above — the east batch is still shown in the coverage grid.
+// west batch (Phase 03b) and this east-batch installment (Brookhaven, Patchogue,
+// Port Jefferson — Phase 03c) above. Sayville, Riverhead, and Northport (the
+// 12th North-Shore hamlet-town, chosen over St. James since St. James already
+// appears as a Smithtown hamlet above) remain in the coverage grid pending a
+// follow-up increment.
 export const sampleTownNames = [
   'Huntington', 'Smithtown', 'Islip', 'Babylon', 'Brookhaven', 'Bay Shore',
   'Patchogue', 'Commack', 'Port Jefferson', 'Sayville', 'Riverhead', 'Northport',
