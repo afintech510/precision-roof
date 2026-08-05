@@ -110,10 +110,40 @@ backend/content increment on it" guidance; the a11y suite itself and the new
 consistent with the existing a11y suite's pattern, but flagging that as
 unverified rather than claiming a pass that didn't happen.
 
+## Done, follow-up run — the final 3 east-batch towns
+
+Added detailed `TownFull` entries for **Sayville, Riverhead, and Northport**
+in `src/lib/sample.ts`, closing out F-002's 12-town launch set (9 built
+across the earlier 03b/03c runs + these 3). Same shape/tone as every prior
+entry; no template changes needed. Side effects that fall out automatically,
+same as the earlier batches:
+- `getQuoteTowns()` / `getPricingRows()` now include all 3.
+- `src/server/east-end-gate.ts`'s `SUFFOLK_ZIP_GATE` already had ZIP entries
+  for all 3 slugs (`11782`, `11901`, `11768`) from an earlier phase — no
+  gate-table change needed.
+- Northport's entry documents the Village of Northport (incorporated, own
+  building dept) vs. East Northport (unincorporated, Town of Huntington)
+  jurisdiction split, the same "which office do I file with" pattern used
+  for Commack's Huntington/Smithtown split.
+
+Also extended `e2e/a11y.spec.ts`'s route list with the 3 new `/areas/` slugs.
+
+**Gate:** `npm run typecheck` / `npm run lint` / `npx vitest run` (375
+tests) / `npm run build` all green (39 pages now, anchor ratio 0.0%,
+click-depth still ≤2). `node_modules` didn't exist at session start in this
+container (fresh sandbox, gitignored) — ran `npm ci` (lockfile-exact
+restore, not a dependency change) so the gate commands could run at all.
+
+`npx playwright test` on the 3 new routes: same pre-existing
+`chrome-headless-shell-1234` executable-missing gap flagged in both prior
+runs above — this container instance still only has `chromium-1194` /
+`chromium_headless_shell-1194`. Not something this change introduced;
+left unresolved per the "don't block a content increment on it" guidance.
+
 ## Still open for Phase 03c
 
-- **Remaining east-batch towns:** Sayville, Riverhead, Northport — still
-  shown as "publishing soon" placeholders in the `/areas/` coverage grid.
+- All 12 launch-town advertising pages now exist. Phase 03c's town-page
+  scope is complete.
 - Playwright browser-version mismatch above — infra, not a code gap; worth a
   container-image fix (or an environment-level `executablePath` override
   outside the repo) so `npx playwright test` is actually runnable in this

@@ -221,6 +221,63 @@ export const sampleTowns: TownFull[] = [
     ],
   },
   {
+    name: 'Sayville', slug: 'sayville', advertisingAllowed: true,
+    blurb: 'Sayville’s Victorian sea-captain homes near the Great South Bay ferry terminal call for roofing that respects the older roof lines while standing up to real waterfront exposure.',
+    depth: {
+      buildingDepartment: { streetAddress: '655 Main St, Islip, NY 11751', phone: '(631) 224-5450', counterHours: 'Mon–Fri 9a–4:30p', filingMethod: 'online portal or in person' },
+      permit: { requiredForReroof: true, fee: '$135 + $8/sq', turnaroundBusinessDays: 10 },
+      historicOverlay: { applies: true, details: 'The Greene Avenue area near downtown carries historic-district recognition — street-visible roof-material changes may need review. We check before we quote.' },
+      housingStock: { era: '1880s–1930s', type: 'Victorians & bungalows, with newer construction further from downtown', typicalRoofSquares: 17 },
+      localConditions: ['Great South Bay waterfront salt air near the ferry terminal', 'Older roof decking common in downtown-adjacent homes'],
+      namedStreets: ['Main St', 'Middle Rd', 'Greene Ave', 'Foster Ave'],
+      hamlets: ['West Sayville', 'Bayport border', 'Oakdale border'],
+      landmarks: ['Sayville Ferry Terminal (Fire Island)', 'Meadow Croft Estate'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'Do I need a permit to reroof in Sayville?', answer: 'Yes — Sayville is part of the Town of Islip, so the same Town of Islip building permit applies; typical turnaround is about 10 business days.' },
+      { question: 'Is my Sayville home in a historic area?', answer: 'Some blocks near Greene Ave and downtown carry historic recognition that can affect visible roof-material changes — we verify your address before we quote.' },
+    ],
+  },
+  {
+    name: 'Riverhead', slug: 'riverhead', advertisingAllowed: true,
+    blurb: 'Riverhead spans downtown Main Street storefronts and the farmland hamlets around it — we price by your actual property, whether that’s a village rooftop or a farmhouse out past the vineyards.',
+    depth: {
+      buildingDepartment: { streetAddress: '200 Howell Ave, Riverhead, NY 11901', phone: '(631) 727-3200', counterHours: 'Mon–Fri 9a–4:30p', filingMethod: 'in person or by mail' },
+      permit: { requiredForReroof: true, fee: '$140 base', turnaroundBusinessDays: 14 },
+      historicOverlay: { applies: true, details: 'The Downtown Riverhead / Main Street corridor carries design-review guidelines for street-visible exterior changes, including roofing.' },
+      housingStock: { era: '1900s–1980s', type: 'Colonials, capes & farmhouses', typicalRoofSquares: 21 },
+      localConditions: ['Peconic River and bay-front exposure on the north side', 'Larger farmhouse-style roofs common in the outlying hamlets'],
+      namedStreets: ['East Main St', 'West Main St', 'Roanoke Ave', 'Osborn Ave'],
+      hamlets: ['Aquebogue', 'Jamesport', 'Calverton', 'Northville'],
+      landmarks: ['Long Island Aquarium', 'Peconic River'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'How long does a Riverhead re-roof permit take?', answer: 'Plan on about 14 business days for the Town of Riverhead building permit, filed in person or by mail.' },
+      { question: 'Does downtown Riverhead have extra design review?', answer: 'Yes — homes and buildings along the Main Street corridor may need design review for visible exterior changes. We confirm this before we quote.' },
+    ],
+  },
+  {
+    name: 'Northport', slug: 'northport', advertisingAllowed: true,
+    blurb: 'Northport’s harborfront hills mean steep, older roof lines and real North Shore wind exposure — and whether you’re in the incorporated village or East Northport changes which building department we file with.',
+    depth: {
+      buildingDepartment: { streetAddress: '224 Main St, Northport, NY 11768', phone: '(631) 261-7502', counterHours: 'Mon–Fri 9a–4p', filingMethod: 'in person' },
+      permit: { requiredForReroof: true, fee: '$150 + fees', turnaroundBusinessDays: 12 },
+      historicOverlay: { applies: true, details: 'The Village of Northport’s harborfront core carries local historic-district guidelines for street-visible exterior changes.' },
+      housingStock: { era: '1880s–1950s', type: 'Victorians & bungalows near the harbor, capes further inland', typicalRoofSquares: 18 },
+      localConditions: ['Steep hillside lots near the harbor complicate access and staging', 'North Shore harbor wind and salt exposure'],
+      namedStreets: ['Main St', 'Woodbine Ave', 'Bayview Ave', 'Scudder Ave'],
+      hamlets: ['East Northport', 'Fort Salonga border', 'Centerport border'],
+      landmarks: ['Northport Harbor', 'Northport Village Park'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'Which building department handles my Northport reroof permit?', answer: 'It depends on your address — the incorporated Village of Northport has its own building department for homes inside village limits, while East Northport (unincorporated) files with the Town of Huntington. We confirm this before filing.' },
+      { question: 'Can you access steep hillside lots near the harbor?', answer: 'Yes — Northport’s harbor-hill terrain is common for us; staging and access planning are built into the quote, not an add-on surprise.' },
+    ],
+  },
+  {
     name: 'Southampton', slug: 'southampton', advertisingAllowed: false,
     blurb: 'Southampton requires its own town-specific home improvement contractor license, separate from our Suffolk County HIC license, which we do not currently hold — so this page is informational only, not an offer to advertise or price work here.',
     depth: {
@@ -279,12 +336,11 @@ export const sampleTowns: TownFull[] = [
   },
 ];
 
-// Full launch set (western/central publish first); detailed pages exist for the
-// west batch (Phase 03b) and this east-batch installment (Brookhaven, Patchogue,
-// Port Jefferson — Phase 03c) above. Sayville, Riverhead, and Northport (the
-// 12th North-Shore hamlet-town, chosen over St. James since St. James already
-// appears as a Smithtown hamlet above) remain in the coverage grid pending a
-// follow-up increment.
+// Full launch set — all 12 advertising towns now have detailed pages: west
+// batch (Phase 03b), first east-batch installment (Brookhaven, Patchogue,
+// Port Jefferson — Phase 03c), and the final 3 (Sayville, Riverhead, and
+// Northport — the 12th North-Shore hamlet-town, chosen over St. James since
+// St. James already appears as a Smithtown hamlet above).
 export const sampleTownNames = [
   'Huntington', 'Smithtown', 'Islip', 'Babylon', 'Brookhaven', 'Bay Shore',
   'Patchogue', 'Commack', 'Port Jefferson', 'Sayville', 'Riverhead', 'Northport',
