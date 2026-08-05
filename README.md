@@ -33,10 +33,11 @@ developer needs to run, test, and deploy the site without archaeology.
 └─────────────────────────────────────────────────────────────────────┘
         │                    │                  │
         ▼                    ▼                  ▼
-   D1 (OP_STORE)        KV (PRICING_KV)    Queue (SMS_QUEUE, producer
-   leads, consent,      materialized       only — see "Known gaps")
-   bookings,            pricing blob
-   suppression, etc.
+   D1 (OP_STORE)        KV (PRICING_KV)    Queue (SMS_QUEUE) + Durable
+   leads, consent,      materialized       Object (SMS_AUTHORITY) — async
+   bookings,            pricing blob       SMS dispatch, live-bound via the
+   suppression, etc.                       custom Worker entry (src/worker/
+                                            entry.ts)
 ```
 
 **Design pattern, everywhere:** pure core (`src/server/*.ts`, zero vendor
@@ -131,19 +132,21 @@ config before assuming which one is canonical.
 
 ## Known gaps (not bugs — documented, deliberate deferrals)
 
-1. **DO/Queue consumer not wired.** `SmsAuthorityDO` (per-phone/budget/
-   suppression concurrency authority) and the Queue *consumer* (async SMS
-   dispatch processing) are fully built and unit-tested
-   (`src/server/sms-authority.ts`, `src/server/sms-dispatch.ts`) but not
-   live-bound in `wrangler.toml` — the `@astrojs/cloudflare` adapter's
-   generated Worker entry only exports `fetch`, with no mechanism to also
-   export a DO class or a `queue()` handler. Binding either breaks
-   `npm run build`/`wrangler deploy` outright (confirmed empirically, not
-   theoretical). Two paths forward are scoped in
-   `docs/build/PROPOSAL-api-wiring.md`'s addendum — needs a decision, not
-   more code, before it can land. Net effect: SMS never actually sends yet;
-   `/api/lead` still captures every lead correctly (falls back to the
-   `callback` channel).
+1. ~~**DO/Queue consumer not wired.**~~ **Resolved (Phase 05b close-out).**
+   `SmsAuthorityDO` and the Queue *consumer* (async SMS dispatch processing)
+   are live-bound via a custom Worker entry (`src/worker/entry.ts`, wired as
+   `main` in `wrangler.toml`) that composes the adapter's own `handle`
+   function (imported from its `@astrojs/cloudflare/handler` subpath)
+   alongside the DO class and `queue()`/`scheduled()` handlers — option (i)
+   from `docs/build/PROPOSAL-api-wiring.md`'s addendum. A postbuild check
+   (`scripts/build-worker-entry.mjs`, runs automatically after `npm run
+   build`) asserts the compiled `dist/server/entry.mjs` still exports
+   `fetch`/`SmsAuthorityDO`/`queue`/`scheduled`, so a future
+   `@astrojs/cloudflare` upgrade that quietly changes this shape fails the
+   build instead of silently shipping a broken Worker. SMS sending itself
+   still needs `TWILIO_*` secrets provisioned (see `.env.example`) — never
+   fails closed without them; `/api/lead` still captures every lead
+   correctly either way.
 2. **`RATE_LIMIT_KV` not provisioned.** `/api/quote` and `/api/lead` rate
    limiting (`src/server/rate-limit.ts`) is built and route-wired but
    inert — `wrangler kv namespace create RATE_LIMIT_KV` hasn't been run.

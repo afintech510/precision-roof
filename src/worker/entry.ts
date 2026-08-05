@@ -23,10 +23,14 @@ import type { SmsDispatchMessage } from '../server/sms-dispatch';
 // bundled (this file's compilation *is* what produces it) — confirmed by
 // trying the build-artifact-import approach first and hitting exactly that
 // circularity ("Could not resolve '../../dist/server/entry.mjs'").
-// scripts/build-worker-entry.mjs's postbuild smoke check (bundle this file
-// standalone, assert fetch/queue/scheduled/SmsAuthorityDO are all present)
-// is what would catch a future @astrojs/cloudflare version moving/renaming
-// this export.
+// scripts/build-worker-entry.mjs (wired as npm's `postbuild`) checks the
+// compiled dist/server/entry.mjs's own `export { ... }` statement for
+// fetch/queue/scheduled/SmsAuthorityDO — it can't import/execute that file
+// directly (still contains `import ... from "cloudflare:workers"`, a real
+// Workers-runtime-only module Node can't resolve), but a static check of
+// the emitted exports is what would catch a future @astrojs/cloudflare
+// version quietly changing this file's export shape without failing the
+// build outright.
 
 export { SmsAuthorityDO };
 
