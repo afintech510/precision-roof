@@ -106,10 +106,67 @@ export const sampleTowns: TownFull[] = [
       { question: 'Can you work with my flood-zone requirements?', answer: 'Absolutely. We’re used to Babylon’s coastal paperwork and build to the wind exposure your block sees.' },
     ],
   },
+  {
+    name: 'Islip', slug: 'islip', advertisingAllowed: true,
+    blurb: 'From Islip Terrace to the Great South Bay shoreline, we build for the wind and moisture exposure that bay-front roofs actually see.',
+    depth: {
+      buildingDepartment: { streetAddress: '655 Main St, Islip, NY 11751', phone: '(631) 224-5450', counterHours: 'Mon–Fri 9a–4:30p', filingMethod: 'online portal or in person' },
+      permit: { requiredForReroof: true, fee: '$135 + $8/sq', turnaroundBusinessDays: 10 },
+      historicOverlay: { applies: false },
+      housingStock: { era: '1950s–1970s', type: 'Ranches & Cape Cods', typicalRoofSquares: 19 },
+      localConditions: ['Bay-front wind exposure near the Great South Bay', 'Marsh-adjacent lots with slower drainage'],
+      namedStreets: ['Main St', 'Union Blvd', 'Carleton Ave', 'Suffolk Ave'],
+      hamlets: ['Islip Terrace', 'East Islip', 'Great River'],
+      landmarks: ['Heckscher State Park', 'Islip Town Beach'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'Do I need a permit to reroof in Islip?', answer: 'Yes — a Town of Islip building permit is required; typical turnaround runs about 10 business days.' },
+      { question: 'Does my bay-front location change the job?', answer: 'It changes the fastener spec and wind rating, not the process — we account for it in your written quote.' },
+    ],
+  },
+  {
+    name: 'Commack', slug: 'commack', advertisingAllowed: true,
+    blurb: 'Commack straddles the Huntington/Smithtown town line, so permit jurisdiction depends on which side of Commack Rd you’re on — we sort that out before we quote.',
+    depth: {
+      buildingDepartment: { streetAddress: '99 W Main St, Smithtown, NY 11787', phone: '(631) 360-7500', counterHours: 'Mon–Fri 9a–4p', filingMethod: 'in person' },
+      permit: { requiredForReroof: true, fee: '$125 base', turnaroundBusinessDays: 14 },
+      historicOverlay: { applies: false },
+      housingStock: { era: '1960s–1980s', type: 'Colonials & split-levels', typicalRoofSquares: 21 },
+      localConditions: ['Sits across the Huntington/Smithtown line — permit office depends on your side of Commack Rd', 'Dense suburban tree cover'],
+      namedStreets: ['Commack Rd', 'Jericho Turnpike', 'Vanderbilt Motor Pkwy', 'Indian Head Rd'],
+      hamlets: ['Hauppauge border', 'Kings Park border'],
+      landmarks: ['Hoyt Farm Nature Preserve'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'Which town handles my Commack reroof permit?', answer: 'It depends on your street — homes on the Huntington side file with Huntington, the Smithtown side with Smithtown. We confirm this before filing.' },
+      { question: 'Is there a historic overlay in Commack?', answer: 'No historic district affects roof work here — permitting is straightforward once we confirm jurisdiction.' },
+    ],
+  },
+  {
+    name: 'Bay Shore', slug: 'bay-shore', advertisingAllowed: true,
+    blurb: 'Bay Shore’s older village core and waterfront exposure — right down to the Fire Island ferry terminal — call for roofing that respects both the house and the salt air.',
+    depth: {
+      buildingDepartment: { streetAddress: '655 Main St, Islip, NY 11751', phone: '(631) 224-5450', counterHours: 'Mon–Fri 9a–4:30p', filingMethod: 'online portal or in person' },
+      permit: { requiredForReroof: true, fee: '$135 + $8/sq', turnaroundBusinessDays: 10 },
+      historicOverlay: { applies: true, details: 'Older homes near the village core may require design review for street-visible roof changes — we check before we quote.' },
+      housingStock: { era: '1900s–1950s', type: 'Victorians & bungalows', typicalRoofSquares: 17 },
+      localConditions: ['Waterfront salt air near the Great South Bay', 'Older roof decking common in pre-1950s homes'],
+      namedStreets: ['Main St', 'Union Blvd', 'Fifth Ave', 'Brook Ave'],
+      hamlets: ['Bay Shore West', 'Bay Shore Historic District'],
+      landmarks: ['Fire Island Ferry Terminal', 'Gardiner County Park'],
+    },
+    pricing: replacementPricing,
+    faqs: [
+      { question: 'Is my Bay Shore home in a historic district?', answer: 'Some blocks near the village core carry design-review requirements for visible roof changes — we verify your address before we quote.' },
+      { question: 'Can older roof decking handle a modern re-roof?', answer: 'Usually, with an inspection first — pre-1950s decking sometimes needs partial replacement, which we call out in writing before any work starts.' },
+    ],
+  },
 ];
 
 // Full launch set (western/central publish first); detailed pages exist for the
-// three above — the rest are shown in the coverage grid.
+// west batch (Phase 03b) above — the east batch is still shown in the coverage grid.
 export const sampleTownNames = [
   'Huntington', 'Smithtown', 'Islip', 'Babylon', 'Brookhaven', 'Bay Shore',
   'Patchogue', 'Commack', 'Port Jefferson', 'Sayville', 'Riverhead', 'Northport',
