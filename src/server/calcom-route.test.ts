@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -48,12 +48,16 @@ function fakeD1(db: InstanceType<typeof DatabaseSync>): D1Database {
 
 const SECRET = 'test-calcom-secret';
 let db: InstanceType<typeof DatabaseSync>;
-let env: { OP_STORE: D1Database; CALCOM_WEBHOOK_SECRET?: string };
+let env: { OP_STORE: D1Database; CALCOM_WEBHOOK_SECRET?: string; GA4_MEASUREMENT_ID?: string; GA4_API_SECRET?: string };
 
 beforeEach(() => {
   db = new DatabaseSync(':memory:');
   for (const m of MIGRATIONS) db.exec(m);
   env = { OP_STORE: fakeD1(db), CALCOM_WEBHOOK_SECRET: SECRET };
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 function ctx(body: string, opts: { signature?: string; env?: unknown } = {}) {
@@ -123,5 +127,35 @@ describe('POST /api/webhooks/calcom', () => {
   it('rejects GET', async () => {
     const res = await GET({} as never);
     expect(res.status).toBe(405);
+  });
+
+  it('fires the GA4 Measurement Protocol event when secrets are configured and a client_id was captured', async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    env.GA4_MEASUREMENT_ID = 'G-TEST123';
+    env.GA4_API_SECRET = 'ga-secret';
+    const body = JSON.stringify({
+      triggerEvent: 'BOOKING_CREATED',
+      payload: { uid: 'CAL-GA-1', metadata: { ga_client_id: 'GA1.2.42' } },
+    });
+    const sig = await computeCalcomSignature(SECRET, body);
+    const res = await POST(ctx(body, { signature: sig }));
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url] = fetchMock.mock.calls[0] as unknown as [string];
+    expect(url).toContain('measurement_id=G-TEST123');
+  });
+
+  it('never calls out to GA4 when the secrets are not configured', async () => {
+    const fetchMock = vi.fn(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const body = JSON.stringify({
+      triggerEvent: 'BOOKING_CREATED',
+      payload: { uid: 'CAL-GA-2', metadata: { ga_client_id: 'GA1.2.42' } },
+    });
+    const sig = await computeCalcomSignature(SECRET, body);
+    const res = await POST(ctx(body, { signature: sig }));
+    expect(res.status).toBe(200);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

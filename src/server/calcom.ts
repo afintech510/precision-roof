@@ -1,4 +1,5 @@
 import type { createRepositories } from '../db/repositories';
+import type { SendGa4Event } from './ga4-send';
 
 // Cal.com booking webhook core (spec §3.2, F-008). Pure logic over the repos so
 // it unit-tests without a Worker runtime; the API route (added with the SSR/
@@ -23,6 +24,8 @@ export interface CalcomWebhook {
 export interface CalcomDeps {
   now: number;
   newId: () => string;
+  /** Real GA4 Measurement Protocol sender. Omitted → the event is decided but never sent (never fail closed). */
+  sendGa4Event?: SendGa4Event;
 }
 
 export interface CalcomResult {
@@ -74,6 +77,7 @@ export async function handleCalcomWebhook(
   }
 
   // 3) Upsert the booking idempotently by Cal.com uid.
+  const status = statusFromTrigger(hook.triggerEvent);
   const bookingId = deps.newId();
   await repos.booking.upsertByUid({
     id: bookingId,
@@ -83,21 +87,30 @@ export async function handleCalcomWebhook(
     name: attendee?.name ?? null,
     phone: attendee?.phoneNumber ?? null,
     email: attendee?.email ?? null,
-    status: statusFromTrigger(hook.triggerEvent),
+    status,
     source,
     createdAt: deps.now,
   });
 
-  // 4) GA booking_completed — real client_id or explicitly unattributed. Never
-  //    mint a random id (it corrupts source/medium).
-  const clientId = metadata?.ga_client_id ?? null;
+  // 4) GA booking_completed — fires once, only for a confirmed booking (never
+  //    on a cancellation trigger — that isn't a "completed" event). Real
+  //    client_id or explicitly unattributed; never mint a random id (it
+  //    corrupts source/medium). The actual Measurement Protocol send is
+  //    best-effort and never blocks/fails booking processing.
+  let ga: CalcomResult['ga'];
+  if (status === 'confirmed') {
+    const clientId = metadata?.ga_client_id ?? null;
+    ga = { event: 'booking_completed', clientId, unattributed: clientId === null };
+    if (clientId && deps.sendGa4Event) {
+      try {
+        await deps.sendGa4Event({ name: 'booking_completed', clientId, params: { booking_id: bookingId } });
+      } catch {
+        // GA4 outage must never block booking processing
+      }
+    }
+  }
+
   await repos.webhookEvents.markProcessed(key, deps.now);
 
-  return {
-    processed: true,
-    bookingId,
-    leadId,
-    source,
-    ga: { event: 'booking_completed', clientId, unattributed: clientId === null },
-  };
+  return { processed: true, bookingId, leadId, source, ga };
 }

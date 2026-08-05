@@ -4,6 +4,7 @@ import { createRepositories } from '../../../db/repositories';
 import { d1Executor } from '../../../db/executor';
 import { handleCalcomWebhook, type CalcomWebhook } from '../../../server/calcom';
 import { verifyCalcomSignature } from '../../../server/calcom-signature';
+import { ga4Sender } from '../../../server/ga4-send';
 import { json } from '../../../server/http';
 
 // POST /api/webhooks/calcom (spec §3.2, F-008). Thin adapter over the pure
@@ -32,7 +33,11 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const repos = createRepositories(d1Executor(env.OP_STORE));
-  const result = await handleCalcomWebhook(hook, repos, { now: Date.now(), newId: () => crypto.randomUUID() });
+  const sendGa4Event =
+    env.GA4_MEASUREMENT_ID && env.GA4_API_SECRET
+      ? ga4Sender({ measurementId: env.GA4_MEASUREMENT_ID, apiSecret: env.GA4_API_SECRET })
+      : undefined;
+  const result = await handleCalcomWebhook(hook, repos, { now: Date.now(), newId: () => crypto.randomUUID(), sendGa4Event });
   return json(result, 200);
 };
 

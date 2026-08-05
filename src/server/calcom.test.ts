@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -77,5 +77,43 @@ describe('Cal.com webhook handler', () => {
     expect(r.processed).toBe(true);
     const booking = await repos.booking.getByUid('CAL-1');
     expect(booking?.status).toBe('cancelled');
+  });
+
+  it('does not report a ga decision for a cancellation (not a completed booking)', async () => {
+    await handleCalcomWebhook(walkUp, repos, deps());
+    const cancel: CalcomWebhook = { ...walkUp, triggerEvent: 'BOOKING_CANCELLED' };
+    const r = await handleCalcomWebhook(cancel, repos, deps());
+    expect(r.ga).toBeUndefined();
+  });
+
+  it('sends exactly one GA4 event with the real client_id on a confirmed booking', async () => {
+    const sendGa4Event = vi.fn(async () => ({ ok: true }));
+    const hook: CalcomWebhook = { ...walkUp, payload: { ...walkUp.payload, uid: 'CAL-4', metadata: { ga_client_id: 'GA1.2.999' } } };
+    await handleCalcomWebhook(hook, repos, { ...deps(), sendGa4Event });
+    expect(sendGa4Event).toHaveBeenCalledTimes(1);
+    expect(sendGa4Event).toHaveBeenCalledWith(expect.objectContaining({ name: 'booking_completed', clientId: 'GA1.2.999' }));
+  });
+
+  it('never sends a GA4 event when unattributed (no minted client_id)', async () => {
+    const sendGa4Event = vi.fn(async () => ({ ok: true }));
+    await handleCalcomWebhook(walkUp, repos, { ...deps(), sendGa4Event });
+    expect(sendGa4Event).not.toHaveBeenCalled();
+  });
+
+  it('never sends a GA4 event on a cancellation', async () => {
+    const sendGa4Event = vi.fn(async () => ({ ok: true }));
+    await handleCalcomWebhook(walkUp, repos, { ...deps(), sendGa4Event });
+    const cancel: CalcomWebhook = { ...walkUp, triggerEvent: 'BOOKING_CANCELLED' };
+    await handleCalcomWebhook(cancel, repos, { ...deps(), sendGa4Event });
+    expect(sendGa4Event).not.toHaveBeenCalled();
+  });
+
+  it('a GA4 send failure never blocks booking processing', async () => {
+    const sendGa4Event = vi.fn(async () => { throw new Error('ga4 down'); });
+    const hook: CalcomWebhook = { ...walkUp, payload: { ...walkUp.payload, uid: 'CAL-5', metadata: { ga_client_id: 'GA1.2.111' } } };
+    const r = await handleCalcomWebhook(hook, repos, { ...deps(), sendGa4Event });
+    expect(r.processed).toBe(true);
+    const booking = await repos.booking.getByUid('CAL-5');
+    expect(booking?.status).toBe('confirmed');
   });
 });
