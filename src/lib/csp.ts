@@ -82,8 +82,11 @@ export interface CspOptions {
 export function buildCspDirectives(opts: CspOptions = {}): string {
   const reportOnly = opts.reportOnly ?? true;
   // https://app.cal.com serves the booking-facade embed loader (spec §7.3);
-  // interaction-loaded, so it never runs on first paint.
-  const scriptSrc = ["'self'", ...(opts.scriptHashes ?? []), 'https://app.cal.com'];
+  // interaction-loaded, so it never runs on first paint. cdn.callrail.com
+  // serves the DNI swap.js loader (Phase 05c Task 1) — present in every page
+  // <head> once configured, so it's allow-listed unconditionally rather than
+  // per-render like the hash lists.
+  const scriptSrc = ["'self'", ...(opts.scriptHashes ?? []), 'https://app.cal.com', 'https://cdn.callrail.com'];
   const styleSrc = ["'self'", ...(opts.styleHashes ?? [])];
   const directives = [
     `default-src 'self'`,
@@ -91,7 +94,9 @@ export function buildCspDirectives(opts: CspOptions = {}): string {
     `style-src ${styleSrc.join(' ')}`,
     `img-src 'self' data:`,
     `font-src 'self'`,
-    `connect-src 'self' https://challenges.cloudflare.com https://www.google-analytics.com https://region1.google-analytics.com`,
+    // CallRail's swap.js calls back to its own API to resolve the tracking
+    // number for the current visit (spec §3.2/§5.3, Phase 05c Task 1).
+    `connect-src 'self' https://challenges.cloudflare.com https://www.google-analytics.com https://region1.google-analytics.com https://api.callrail.com`,
     `frame-src https://cal.com https://app.cal.com https://challenges.cloudflare.com`,
     `object-src 'none'`,
     `base-uri 'none'`,

@@ -1,0 +1,26 @@
+---
+// CallRail Dynamic Number Insertion loader (spec §3.2/§5.3, BUILDPLAN Phase
+// 05c Task 1; F-010). CallRail's own script does the DOM scan-and-swap of
+// on-page phone numbers to a call-tracking number so inbound calls attribute
+// to the referring page — nothing here marks up individual phone elements.
+//
+// The canonical NAP stays fixed regardless: JSON-LD is a non-scripting MIME
+// type CallRail's swap never touches (see src/lib/structured-data.ts), and
+// every call button on the site (Header, the fixed mobile "Call now" button
+// in BaseLayout) is a plain <a href="tel:..."> — it keeps working,
+// un-attributed, if this script is blocked (ad blockers commonly target
+// *.callrail.com) or simply absent below.
+//
+// Unset until Adam provisions the CallRail account (same degrade-gracefully
+// shape as CalcomFacade's calcomLink): render nothing rather than a broken
+// script tag.
+import { callrailSwapScriptUrl } from '../lib/callrail-dni';
+
+interface Props {
+  companyId?: string;
+  scriptId?: string;
+}
+const { companyId, scriptId } = Astro.props;
+const src = companyId && scriptId ? callrailSwapScriptUrl(companyId, scriptId) : undefined;
+---
+{src && <script is:inline id="swap_script" async src={src}></script>}

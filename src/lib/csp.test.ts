@@ -126,6 +126,14 @@ describe('buildCspDirectives', () => {
     expect(scriptSrc).toContain('https://app.cal.com');
   });
 
+  it('allow-lists cdn.callrail.com as a script source and api.callrail.com to connect (DNI swap.js)', () => {
+    const csp = buildCspDirectives();
+    const scriptSrc = csp.split(';').find((d) => d.trim().startsWith('script-src'));
+    const connectSrc = csp.split(';').find((d) => d.trim().startsWith('connect-src'));
+    expect(scriptSrc).toContain('https://cdn.callrail.com');
+    expect(connectSrc).toContain('https://api.callrail.com');
+  });
+
   it('allow-lists provided style hashes', () => {
     const csp = buildCspDirectives({ styleHashes: [`'sha256-def456='`] });
     expect(csp).toContain(`style-src 'self' 'sha256-def456='`);

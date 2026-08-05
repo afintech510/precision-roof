@@ -160,10 +160,14 @@ config before assuming which one is canonical.
    infra.
 6. **Phase 05c partially done.** Missed-call text-back
    (`/api/webhooks/callrail` → `src/server/callrail.ts`) is built, tested,
-   and reuses the 05b send path. Still open: CallRail DNI itself (needs a
-   live CallRail account/tracking numbers) and the Acorn/Wisetack financing
-   facade on `/financing/` (needs a financing-vendor choice + a TCPA
-   consent-basis decision) — both require Adam's input, not more code.
+   and reuses the 05b send path. CallRail DNI (`src/components/CallRailDni.astro`,
+   wired into every page via `BaseLayout`) is also built — it renders
+   CallRail's swap.js loader when `siteSettings.callrailCompanyId` /
+   `callrailScriptId` are set, and renders nothing (canonical numbers only)
+   until then, since no live CallRail account exists yet. Still open: the
+   Acorn/Wisetack financing facade on `/financing/` (needs a
+   financing-vendor choice + a TCPA consent-basis decision) — requires
+   Adam's input, not more code.
 7. **Sanity not seeded** — every page currently renders from
    `src/lib/sample.ts`. Swapping `src/lib/content.ts` to real
    `@sanity/client` queries is a drop-in change (same return shapes) once

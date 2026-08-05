@@ -13,6 +13,14 @@ export interface SiteSettings {
   // (spec §3.2, Phase 05a Task 1). Unset until Adam creates the Cal.com
   // account — the booking facade degrades to a phone-CTA-only card when absent.
   calcomLink?: string;
+  // CallRail Dynamic Number Insertion identifiers (spec §3.2/§5.3, Phase 05c
+  // Task 1) — CallRail's own public swap.js embed IDs, not secrets (the
+  // server-side CALLRAIL_WEBHOOK_SECRET is separate, in .env.example). Unset
+  // until Adam provisions the CallRail account; the DNI script then simply
+  // doesn't load and every phone element keeps rendering the canonical
+  // number, same degrade-gracefully shape as calcomLink.
+  callrailCompanyId?: string;
+  callrailScriptId?: string;
 }
 
 export interface ServiceLite {

@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import CallRailDni from '../components/CallRailDni.astro';
 import { getSite } from '../lib/content';
 import StructuredData from '../components/StructuredData.astro';
 import { roofingContractor } from '../lib/structured-data';
@@ -26,6 +27,7 @@ const jsonLd = [roofingContractor(site), ...schema];
     <meta property="og:type" content="website" />
     <meta name="theme-color" content="#143b5e" />
     <StructuredData schema={jsonLd} />
+    <CallRailDni companyId={site.callrailCompanyId} scriptId={site.callrailScriptId} />
   </head>
   <body>
     <a href="#main" class="skip-link">Skip to content</a>
