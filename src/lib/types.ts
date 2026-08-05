@@ -21,6 +21,14 @@ export interface SiteSettings {
   // number, same degrade-gracefully shape as calcomLink.
   callrailCompanyId?: string;
   callrailScriptId?: string;
+  // Financing soft-pull prequal link (spec §4/§5.9, Phase 05c Task 3). Unset
+  // until Adam chooses a lender (spec names Acorn/Wisetack as alternatives —
+  // // SPEC-AMBIGUITY, no pick made yet) and provisions the account; the
+  // facade degrades to a phone-CTA-only card when absent, same shape as
+  // calcomLink. Treated as a hosted URL loaded in an iframe rather than a
+  // vendor JS SDK, since neither candidate's exact embed contract is
+  // confirmed — revisit if the chosen vendor requires a script widget instead.
+  financingLink?: string;
 }
 
 export interface ServiceLite {

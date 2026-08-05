@@ -1,0 +1,99 @@
+---
+// Financing soft-pull facade (spec §4, §5.9; BUILDPLAN Phase 05c Task 3;
+// F-011). Same degrade-gracefully shape as CalcomFacade: nothing from the
+// lender loads until the visitor clicks "Check my options", showing an
+// immediate loading affordance while it does — the phone CTA stays visible
+// the whole time, so a slow or failed load never reads as a dead button.
+// When `financingLink` isn't configured (no lender account yet — spec names
+// Acorn/Wisetack as alternatives without picking one, // SPEC-AMBIGUITY),
+// this renders the same honest "coming soon, call us" card the /financing/
+// page used before this facade existed.
+interface Props {
+  financingLink?: string;
+  phone: string;
+  phoneHref: string;
+}
+const { financingLink, phone, phoneHref } = Astro.props;
+const hasLink = Boolean(financingLink);
+---
+<div class="financing-facade card" id="financing-facade" data-financing-link={financingLink ?? ''}>
+  <h3>Prequalify in minutes</h3>
+  {hasLink ? (
+    <>
+      <p class="muted">Check your options with a soft-pull prequalification — it won’t affect your credit score.</p>
+      <div class="ff-actions">
+        <button type="button" class="btn btn-primary ff-trigger" id="ff-trigger">Check my options</button>
+        <a class="btn btn-ghost" href={phoneHref}>Call {phone}</a>
+      </div>
+      <div class="ff-status" id="ff-status" role="status" aria-live="polite" aria-atomic="true"></div>
+      <div class="ff-embed" id="ff-embed" tabindex="-1" hidden></div>
+    </>
+  ) : (
+    <>
+      <p class="muted">The lender’s secure soft-pull flow is added in a later build phase. It’s a maintained third-party product — never a static page that can’t deliver.</p>
+      <a class="btn btn-primary" href={phoneHref}>Call {phone}</a>
+    </>
+  )}
+</div>
+
+<script>
+  // Generic hosted-URL-in-iframe loader rather than a vendor-specific SDK
+  // (unlike CalcomFacade's embed.js): neither Acorn's nor Wisetack's exact
+  // embed contract is confirmed yet, so this treats `financingLink` as a
+  // plain prequal URL. The load timeout is the real safety net — cross-origin
+  // iframes don't reliably fire `error` on a blocked/failed load.
+  const facade = document.getElementById('financing-facade') as HTMLElement | null;
+  const trigger = document.getElementById('ff-trigger') as HTMLButtonElement | null;
+  if (facade && trigger) {
+    const link = facade.dataset.financingLink ?? '';
+    const status = document.getElementById('ff-status') as HTMLElement;
+    const embed = document.getElementById('ff-embed') as HTMLElement;
+
+    trigger.addEventListener('click', () => {
+      trigger.disabled = true;
+      status.textContent = 'Loading your prequalification…';
+      embed.hidden = false;
+
+      let settled = false;
+      const fallback = () => {
+        if (settled) return;
+        settled = true;
+        embed.hidden = true;
+        status.textContent = 'That didn’t load. Please call us — the button above still works.';
+        trigger.disabled = false;
+        trigger.textContent = 'Try again';
+      };
+      const timeout = window.setTimeout(fallback, 8000);
+
+      try {
+        const iframe = document.createElement('iframe');
+        iframe.src = link;
+        iframe.title = 'Financing prequalification';
+        iframe.loading = 'lazy';
+        iframe.addEventListener('load', () => {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
+          status.textContent = '';
+          embed.focus();
+        });
+        iframe.addEventListener('error', fallback);
+        embed.replaceChildren(iframe);
+      } catch {
+        window.clearTimeout(timeout);
+        fallback();
+      }
+    });
+  }
+</script>
+
+<style>
+  .financing-facade { display: grid; gap: 12px; }
+  .financing-facade h3 { margin: 0; }
+  .ff-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 2px; }
+  .ff-status:empty { display: none; }
+  .ff-status { font-size: .9rem; color: var(--text); }
+  .ff-embed { min-height: 0; }
+  .ff-embed:not([hidden]) { min-height: 480px; margin-top: 4px; }
+  .ff-embed iframe { width: 100%; height: 480px; border: 0; }
+</style>
