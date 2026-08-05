@@ -5,6 +5,28 @@ compatibility_flags = ["nodejs_compat"]
 # model, not Pages — the adapter reserves the ASSETS binding). Do NOT set
 # pages_build_output_dir here or wrangler treats it as a Pages project.
 
+# Custom Worker entry (Adam-approved, 2026-08-05): the @astrojs/cloudflare
+# adapter's default entry (`@astrojs/cloudflare/entrypoints/server`) only
+# exports `fetch`, with no mechanism to also export a DO class or a
+# queue()/scheduled() handler. `main` below swaps in src/worker/entry.ts,
+# which composes the same `handle` function the default entry uses (imported
+# from the package's public `@astrojs/cloudflare/handler` subpath) alongside
+# SmsAuthorityDO + queue() + scheduled() (see docs/build/PROPOSAL-api-
+# wiring.md addendum, option (i)). Astro's own build bundles whatever `main`
+# names as its SSR output — confirmed by trying it: an earlier version of
+# this file imported the adapter's *compiled output*
+# (dist/server/entry.mjs) instead of `handle` directly, which is circular
+# (that file doesn't exist until the build that's bundling `main` finishes)
+# and fails with "Could not resolve '../../dist/server/entry.mjs'".
+#
+# MUST stay a top-level (root table) key, i.e. above every `[[...]]`/`[...]`
+# section header below — TOML scopes bare `key = value` lines to whichever
+# table was most recently opened, so placed anywhere lower this silently
+# attaches to the wrong table instead of erroring (confirmed by trying it:
+# wrangler warned "unexpected fields found in d1_databases[0]" when this sat
+# after `[[d1_databases]]`).
+main = "src/worker/entry.ts"
+
 # Explicit: adding a [[routes]] entry makes wrangler default workers_dev to
 # false. Keep the workers.dev URL live regardless of custom-domain status —
 # it must never silently go dark as a side effect of an unrelated change.
@@ -35,27 +57,16 @@ database_id = "1a4c5b80-adda-42f9-8231-0ac1398c7f7d"
 migrations_dir = "migrations"
 
 # Durable Object for the per-phone/budget/suppression SMS-send authority (spec
-# §1.2, §3.1, [C2-003, C2-004, C2-033]) — pure core + thin DO class are built
-# and unit-tested (src/server/sms-authority.ts, src/durable-objects/sms-authority-do.ts).
-# NOT actually declared as a live [[durable_objects.bindings]]/[[migrations]]
-# entry here: the @astrojs/cloudflare adapter's generated Worker entry only
-# exports `fetch`, with no built-in mechanism to also re-export a custom DO
-# class — so `class_name = "SmsAuthorityDO"` would reference a class that
-# doesn't exist in the compiled Worker, and both `npx wrangler deploy` and the
-# local Miniflare instance `npm run build`/`astro dev` spin up to prerender
-# would fail at Worker-startup ("Class extends value undefined is not a
-# constructor") confirmed by trying it. Binding this for real requires a
-# custom Worker entry wrapper (see docs/build/PROPOSAL-api-wiring.md
-# addendum); deferred until that composition decision is made and Adam
-# approves a deploy. The example block below is what to add once it exists:
-#
-# [[durable_objects.bindings]]
-# name = "SMS_AUTHORITY"
-# class_name = "SmsAuthorityDO"
-#
-# [[migrations]]
-# tag = "v1"
-# new_sqlite_classes = ["SmsAuthorityDO"]
+# §1.2, §3.1, [C2-003, C2-004, C2-033]) — pure core + thin DO class
+# (src/server/sms-authority.ts, src/durable-objects/sms-authority-do.ts), now
+# exported by the custom entry above.
+[[durable_objects.bindings]]
+name = "SMS_AUTHORITY"
+class_name = "SmsAuthorityDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["SmsAuthorityDO"]
 
 # Pricing-blob cache — Cloudflare KV (spec §3.2 [C2-023]). /api/webhooks/sanity-
 # publish materializes the blob here; /api/quote reads it (and falls back to an
@@ -72,10 +83,8 @@ binding = "SESSION"
 id = "e9963bba7d7e494599066f84d01fb765"
 
 # Speed-to-lead SMS dispatch queue (spec §3.1, BUILDPLAN Phase 05b) — producer
-# binding used by /api/lead + slo-sweep; the consumer entry below names a
-# `queue()` handler that does not yet exist in any deployed Worker entry point
-# for the same reason as the DO above (see docs/build/PROPOSAL-api-wiring.md
-# addendum). Declared for completeness, not deployed.
+# binding used by /api/lead + slo-sweep; the consumer's `queue()` handler
+# (src/server/sms-queue-consumer.ts) is exported by the custom entry above.
 [[queues.producers]]
 binding = "SMS_QUEUE"
 queue = "sms-dispatch"
@@ -84,6 +93,17 @@ queue = "sms-dispatch"
 queue = "sms-dispatch"
 max_batch_size = 10
 max_retries = 3
+
+# Cron Triggers — all three route through the custom entry's `scheduled()`,
+# which dispatches on `event.cron` (src/worker/entry.ts). Cadences are
+# defaults, not spec-mandated; Adam can retune freely, just keep entry.ts's
+# switch in sync.
+[triggers]
+crons = [
+  "*/5 * * * *", # slo-sweep (Phase 05b Task 6) — speed-to-lead safety net
+  "10 3 * * *",  # retention/purge sweep (Phase 08)
+  "0 14 * * *",  # review-request cron send (Phase 09)
+]
 
 # Public-endpoint rate-limit hardening (spec §3.3, §8, Phase 08 Task 2) —
 # src/server/rate-limit.ts + wiring in /api/quote and /api/lead. Not yet

@@ -9,7 +9,17 @@ import { seoTechnical } from './src/integrations/seo-technical';
 export default defineConfig({
   site: 'https://premiumroofsolutions.com',
   output: 'static',
-  adapter: cloudflare(),
+  // prerenderEnvironment: 'node' — the default 'workerd' spins up a local
+  // Miniflare instance to render static pages, which needs a fully-startable
+  // Worker. Once SmsAuthorityDO is live-bound (below / wrangler.toml), that
+  // Miniflare instance uses its own internal entry resolution — NOT this
+  // project's custom src/worker/entry.ts — so it crashes the same way
+  // ("Class extends value undefined") regardless of wrangler.toml's `main`.
+  // 'node' prerendering sidesteps that: none of our prerendered pages touch
+  // Cloudflare-specific bindings, so plain Node rendering is equivalent for
+  // them. See docs/build/PROPOSAL-api-wiring.md addendum — confirmed by
+  // trying it, same as the rest of that finding.
+  adapter: cloudflare({ prerenderEnvironment: 'node' }),
   // csp runs after perfBudget so dist/client/_headers (written by the
   // cloudflare adapter for asset caching) already exists to append to.
   // seoTechnical replaces @astrojs/sitemap with content-type-split sitemaps

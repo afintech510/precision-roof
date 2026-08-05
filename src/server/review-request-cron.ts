@@ -9,17 +9,11 @@ import { runReviewRequestSweep } from './review-request-sweep';
 // review-request-sweep.ts so it stays unit-testable without a Worker
 // runtime; this function only supplies the real transports + D1 repos.
 //
-// NOT YET WIRED, same root cause as retention-cron.ts, lead-authority-do.ts,
-// and sms-queue-consumer.ts: the @astrojs/cloudflare adapter's generated
-// Worker entry exports only `{ fetch: handle }` — no `scheduled()` handler
-// hook, by the same grep-confirmed absence (see
-// docs/build/PROPOSAL-api-wiring.md addendum). Wiring a Cron Trigger needs
-// the same deploy-topology decision already deferred to Adam for the DO +
-// Queue (custom worker-entry re-export vs. a separate small Worker); adding
-// a `[triggers]` cron here without one of those in place would have nothing
-// to invoke. Once that decision lands, this export is what it calls.
+// Wired via src/worker/entry.ts's `scheduled()`, which routes to this on the
+// `0 14 * * *` cron (wrangler.toml `[triggers]`) — see
+// docs/build/PROPOSAL-api-wiring.md addendum for why that indirection exists.
 //
-// Also requires provisioning secrets this env doesn't have yet:
+// Still requires provisioning secrets this env doesn't have yet:
 // TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN/TWILIO_FROM_NUMBER (already used by
 // /api/lead), POSTMARK_SERVER_TOKEN + EMAIL_FROM_ADDRESS (new, added to
 // env.d.ts this phase), UNSUBSCRIBE_TOKEN_SECRET (new), and REVIEW_URL /
