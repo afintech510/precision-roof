@@ -32,23 +32,35 @@ const schema = [
   <section class="thero container">
     <div class="thero-copy">
       <span class="eyebrow">Roofing in {town.name}, NY</span>
-      <h1>{town.name} roofing, priced for your block.</h1>
-      <p class="lede">{town.blurb}</p>
-      <div class="hero-cta">
-        <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
-        <a class="btn btn-ghost tnum" href={site.phoneHref}>{site.phone}</a>
-      </div>
-      <p class="lic tnum">✓ {site.licenseNumber} · Fully insured</p>
+      {town.advertisingAllowed ? (
+        <>
+          <h1>{town.name} roofing, priced for your block.</h1>
+          <p class="lede">{town.blurb}</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+            <a class="btn btn-ghost tnum" href={site.phoneHref}>{site.phone}</a>
+          </div>
+          <p class="lic tnum">✓ {site.licenseNumber} · Fully insured</p>
+        </>
+      ) : (
+        <>
+          <h1>{town.name}, NY — informational only</h1>
+          <p class="lede">{town.blurb}</p>
+          <p class="lic tnum">Suffolk County HIC {site.licenseNumber} — this license does not cover work inside {town.name}.</p>
+        </>
+      )}
     </div>
-    <aside class="tprice card">
-      <span class="eyebrow">Roof replacement · {town.name}</span>
-      <ul>
-        {town.pricing.map((b) => (
-          <li><span class="muted">{b.bandLabel}</span><span class="tnum pv">{formatUsd(b.low)}–{formatUsd(b.high)}</span></li>
-        ))}
-      </ul>
-      <p class="disc muted">Ranges reflect {town.name} home sizes. Your written quote is itemized and non-binding until you approve it.</p>
-    </aside>
+    {town.advertisingAllowed && (
+      <aside class="tprice card">
+        <span class="eyebrow">Roof replacement · {town.name}</span>
+        <ul>
+          {town.pricing.map((b) => (
+            <li><span class="muted">{b.bandLabel}</span><span class="tnum pv">{formatUsd(b.low)}–{formatUsd(b.high)}</span></li>
+          ))}
+        </ul>
+        <p class="disc muted">Ranges reflect {town.name} home sizes. Your written quote is itemized and non-binding until you approve it.</p>
+      </aside>
+    )}
   </section>
 
   <section class="section section--sand">
@@ -97,12 +109,25 @@ const schema = [
     </div>
   </section>
 
-  <section class="section section--ink">
-    <div class="container cta">
-      <h2>Get a straight answer on your {town.name} roof</h2>
-      <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
-    </div>
-  </section>
+  {town.advertisingAllowed ? (
+    <section class="section section--ink">
+      <div class="container cta">
+        <h2>Get a straight answer on your {town.name} roof</h2>
+        <a class="btn btn-primary" href="/contact/">Book a free inspection</a>
+      </div>
+    </section>
+  ) : (
+    <section class="section section--sand">
+      <div class="container narrow">
+        <p class="muted">
+          We're licensed to advertise and price work in 12 Suffolk County towns, and {town.name} isn't
+          one of them yet — it requires its own separate town contractor license. The building-department
+          details above are offered as a courtesy; verify any contractor's license status with the Town of
+          {town.name} directly, and with Suffolk County's <a href={site.dcaVerifyUrl}>Department of Consumer Affairs</a>.
+        </p>
+      </div>
+    </section>
+  )}
 </BaseLayout>
 
 <style>

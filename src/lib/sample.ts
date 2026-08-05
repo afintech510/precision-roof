@@ -220,6 +220,63 @@ export const sampleTowns: TownFull[] = [
       { question: 'Can you access steep hillside lots safely?', answer: 'Yes — Port Jefferson’s terrain is common for us; staging and access planning are built into the quote, not an add-on surprise.' },
     ],
   },
+  {
+    name: 'Southampton', slug: 'southampton', advertisingAllowed: false,
+    blurb: 'Southampton requires its own town-specific home improvement contractor license, separate from our Suffolk County HIC license, which we do not currently hold — so this page is informational only, not an offer to advertise or price work here.',
+    depth: {
+      buildingDepartment: { streetAddress: '116 Hampton Rd, Southampton, NY 11968', phone: '(631) 287-5700', counterHours: 'Mon–Fri 8:30a–4p', filingMethod: 'online portal or in person' },
+      permit: { requiredForReroof: true, fee: 'Set by the Town of Southampton', turnaroundBusinessDays: 14 },
+      historicOverlay: { applies: true, details: 'Several hamlets carry local historic or scenic-corridor review for street-visible exterior changes, including roofing — confirm with the Town before any work.' },
+      housingStock: { era: '1800s–present', type: 'Historic shingle-style homes alongside newer construction', typicalRoofSquares: 24 },
+      localConditions: ['Direct Atlantic/bay coastal wind and salt exposure', 'Historic-district review common near hamlet centers'],
+      namedStreets: ['Hampton Rd', 'County Rd 39', 'Montauk Hwy'],
+      hamlets: ['Southampton Village', 'Bridgehampton', 'Water Mill', 'Hampton Bays'],
+      landmarks: ['Southampton Town Hall', 'Cooper’s Beach'],
+    },
+    pricing: [],
+    faqs: [
+      { question: 'Do you do roofing work in Southampton?', answer: 'Not currently — Southampton requires its own town home improvement contractor license in addition to our Suffolk County HIC license, and we don’t hold it yet. This page is informational only; we can’t book or price work here.' },
+      { question: 'How do I verify a contractor’s license for a Southampton job?', answer: `Check the Town of Southampton's own contractor registry as well as Suffolk County's DCA lookup — a Suffolk County HIC license alone doesn't authorize work inside Southampton.` },
+    ],
+  },
+  {
+    name: 'East Hampton', slug: 'east-hampton', advertisingAllowed: false,
+    blurb: 'East Hampton requires its own town-specific home improvement contractor license, separate from our Suffolk County HIC license, which we do not currently hold — so this page is informational only, not an offer to advertise or price work here.',
+    depth: {
+      buildingDepartment: { streetAddress: '300 Pantigo Pl, Suite 110, East Hampton, NY 11937', phone: '(631) 324-4145', counterHours: 'Mon–Fri 8:30a–3:30p', filingMethod: 'online portal or in person' },
+      permit: { requiredForReroof: true, fee: 'Set by the Town of East Hampton', turnaroundBusinessDays: 14 },
+      historicOverlay: { applies: true, details: 'Hamlet centers and many older homes fall under local historic or architectural review for exterior changes, including roof material and street-visible work.' },
+      housingStock: { era: '1800s–present', type: 'Historic shingle-style and estate homes alongside newer construction', typicalRoofSquares: 26 },
+      localConditions: ['Direct Atlantic/bay coastal wind and salt exposure', 'Historic-district review common near hamlet centers'],
+      namedStreets: ['Pantigo Pl', 'Montauk Hwy', 'Main St'],
+      hamlets: ['East Hampton Village', 'Amagansett', 'Montauk', 'Springs'],
+      landmarks: ['East Hampton Town Hall', 'Main Beach'],
+    },
+    pricing: [],
+    faqs: [
+      { question: 'Do you do roofing work in East Hampton?', answer: 'Not currently — East Hampton requires its own town home improvement contractor license in addition to our Suffolk County HIC license, and we don’t hold it yet. This page is informational only; we can’t book or price work here.' },
+      { question: 'How do I verify a contractor’s license for an East Hampton job?', answer: `Check the Town of East Hampton's own contractor registry as well as Suffolk County's DCA lookup — a Suffolk County HIC license alone doesn't authorize work inside East Hampton.` },
+    ],
+  },
+  {
+    name: 'Shelter Island', slug: 'shelter-island', advertisingAllowed: false,
+    blurb: 'Shelter Island requires its own town-specific home improvement contractor license, separate from our Suffolk County HIC license, which we do not currently hold — so this page is informational only, not an offer to advertise or price work here.',
+    depth: {
+      buildingDepartment: { streetAddress: '38 North Ferry Rd, Shelter Island, NY 11964', phone: '(631) 749-0772', counterHours: 'Mon–Fri 9a–4p, by appointment recommended', filingMethod: 'in person or by mail' },
+      permit: { requiredForReroof: true, fee: 'Set by the Town of Shelter Island', turnaroundBusinessDays: 14 },
+      historicOverlay: { applies: false },
+      housingStock: { era: '1800s–present', type: 'Historic homes and cottages, ferry-access only', typicalRoofSquares: 18 },
+      localConditions: ['Island-wide coastal wind and salt exposure', 'Material and equipment access is ferry-dependent, which affects scheduling'],
+      namedStreets: ['North Ferry Rd', 'South Ferry Rd', 'Route 114'],
+      hamlets: ['Shelter Island Heights', 'West Neck'],
+      landmarks: ['Shelter Island Town Hall', 'Mashomack Preserve'],
+    },
+    pricing: [],
+    faqs: [
+      { question: 'Do you do roofing work on Shelter Island?', answer: 'Not currently — Shelter Island requires its own town home improvement contractor license in addition to our Suffolk County HIC license, and we don’t hold it yet. This page is informational only; we can’t book or price work here.' },
+      { question: 'How do I verify a contractor’s license for a Shelter Island job?', answer: `Check the Town of Shelter Island's own contractor registry as well as Suffolk County's DCA lookup — a Suffolk County HIC license alone doesn't authorize work on the island.` },
+    ],
+  },
 ];
 
 // Full launch set (western/central publish first); detailed pages exist for the
