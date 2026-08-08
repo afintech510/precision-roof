@@ -90,6 +90,37 @@ describe('runSloSweep — scope', () => {
     expect(res.sent).toBe(0);
     expect(res.skipped).toEqual([{ leadId: 'lead-1', reason: 'budget_anomaly' }]);
   });
+
+  it('skips when the reservation succeeds but the immediate re-claim is denied (e.g. STOP landed between reserve and claim)', async () => {
+    await insertLead();
+    let claimCalls = 0;
+    const authority: SmsAuthorityStub = {
+      reserve: async () => ({ allow: true, token: 't1' }),
+      claimSend: async () => {
+        claimCalls++;
+        // First claimSend (before the fresh reserve) reports no reservation yet;
+        // the re-claim right after reserve() is denied — suppression raced in.
+        return claimCalls === 1 ? { allow: false, reason: 'no_reservation' } : { allow: false, reason: 'suppressed' };
+      },
+    };
+    const res = await runSloSweep(repos, authority, deps());
+    expect(claimCalls).toBe(2);
+    expect(res.sent).toBe(0);
+    expect(res.skipped).toEqual([{ leadId: 'lead-1', reason: 'suppressed' }]);
+    const lead = await repos.lead.getById('lead-1');
+    expect(lead?.status).not.toBe('sms_sent');
+  });
+
+  it('records a skip (not a send) when the claim succeeds but the actual dispatch fails', async () => {
+    await insertLead();
+    const authority: SmsAuthorityStub = { reserve: async () => ({ allow: true, token: 't1' }), claimSend: async () => ({ allow: true }) };
+    const failingDeps = { ...deps(), sendSms: async () => ({ ok: false as const, message: 'provider_error' }) };
+    const res = await runSloSweep(repos, authority, failingDeps);
+    expect(res.sent).toBe(0);
+    expect(res.skipped).toEqual([{ leadId: 'lead-1', reason: 'send_failed' }]);
+    const lead = await repos.lead.getById('lead-1');
+    expect(lead?.status).toBe('failed_followup');
+  });
 });
 
 describe('runSloSweep — live submit racing the sweep for the same phone (real DO authority core)', () => {
