@@ -37,4 +37,15 @@ describe('slo-sweep-cron — missing config guard', () => {
     } as never);
     expect(result).toBeUndefined();
   });
+
+  it('proceeds (touches D1) once all required config is present', async () => {
+    const { scheduled } = await import('./slo-sweep-cron');
+    await expect(
+      scheduled({
+        OP_STORE: throwingD1(),
+        SMS_AUTHORITY: { idFromName: () => 'id', get: () => ({}) },
+        TWILIO_ACCOUNT_SID: 'AC1', TWILIO_AUTH_TOKEN: 'tok', TWILIO_FROM_NUMBER: '+15165550199',
+      } as never),
+    ).rejects.toThrow('D1 should not be touched when config is missing');
+  });
 });
