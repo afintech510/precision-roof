@@ -85,6 +85,16 @@ describe('GET /unsubscribe', () => {
 });
 
 describe('POST /unsubscribe', () => {
+  it('503s when OP_STORE is not configured', async () => {
+    const res = await POST(ctx('https://premiumroofsolutions.com/unsubscribe?token=x', { method: 'POST', env: { UNSUBSCRIBE_TOKEN_SECRET: SECRET } }));
+    expect(res.status).toBe(503);
+  });
+
+  it('503s when the token secret is not configured', async () => {
+    const res = await POST(ctx('https://premiumroofsolutions.com/unsubscribe?token=x', { method: 'POST', env: { OP_STORE: fakeD1(db) } }));
+    expect(res.status).toBe(503);
+  });
+
   it('suppresses the address on a valid token', async () => {
     const token = await mintUnsubscribeToken('pat@example.com', { secret: SECRET, now: Date.now() });
     const res = await POST(ctx(`https://premiumroofsolutions.com/unsubscribe?token=${encodeURIComponent(token)}`, { method: 'POST' }));
