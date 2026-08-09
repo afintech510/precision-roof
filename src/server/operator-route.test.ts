@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import type { D1Database } from '@cloudflare/workers-types';
 import type { SqlParam } from '../db/executor';
 import { GET as getLead, POST as postLead } from '../pages/api/operator/leads/[id]';
-import { GET as getFailedSends } from '../pages/api/operator/failed-sends';
-import { GET as getConfirm } from '../pages/api/operator/resend/confirm';
-import { POST as postResend } from '../pages/api/operator/resend/index';
+import { GET as getFailedSends, POST as postFailedSends } from '../pages/api/operator/failed-sends';
+import { GET as getConfirm, POST as postConfirm } from '../pages/api/operator/resend/confirm';
+import { POST as postResend, GET as getResend } from '../pages/api/operator/resend/index';
 import { mintResendToken } from './dashboard';
 import type { ReserveOutcome } from './sms-authority';
 import type { SmsDispatchMessage } from './sms-dispatch';
@@ -140,6 +140,11 @@ describe('GET /api/operator/failed-sends', () => {
     expect(res.status).toBe(403);
   });
 
+  it('503s when not configured', async () => {
+    const res = await getFailedSends({ ...req('https://x/api/operator/failed-sends', { env: {} }), clientAddress: '203.0.113.1' } as never);
+    expect(res.status).toBe(503);
+  });
+
   it('returns the failed-followup leads with one access-log row each', async () => {
     const res = await getFailedSends({ ...req('https://x/api/operator/failed-sends'), clientAddress: '203.0.113.1' } as never);
     const out = (await res.json()) as { leads: Array<{ id: string }> };
@@ -148,12 +153,34 @@ describe('GET /api/operator/failed-sends', () => {
     const rows = db.prepare('SELECT COUNT(*) AS n FROM operator_access_log').all();
     expect((rows[0] as { n: number }).n).toBe(1);
   });
+
+  it('rejects POST', async () => {
+    const res = await postFailedSends({} as never);
+    expect(res.status).toBe(405);
+  });
 });
 
 describe('GET /api/operator/resend/confirm', () => {
   it('403s without the Access identity header', async () => {
     const res = await getConfirm({ ...req('https://x/api/operator/resend/confirm?token=x', { withAccess: false }), url: new URL('https://x/api/operator/resend/confirm?token=x') } as never);
     expect(res.status).toBe(403);
+  });
+
+  it('503s when OP_STORE is not configured', async () => {
+    const url = new URL('https://x/api/operator/resend/confirm?token=x');
+    const res = await getConfirm({ ...req(url.toString(), { env: {} }), url } as never);
+    expect(res.status).toBe(503);
+  });
+
+  it('503s when RESEND_TOKEN_SECRET is not configured', async () => {
+    const url = new URL('https://x/api/operator/resend/confirm?token=x');
+    const res = await getConfirm({ ...req(url.toString(), { env: { OP_STORE: env.OP_STORE } }), url } as never);
+    expect(res.status).toBe(503);
+  });
+
+  it('rejects POST', async () => {
+    const res = await postConfirm({} as never);
+    expect(res.status).toBe(405);
   });
 
   it('verifies a valid token without consuming it', async () => {
@@ -179,6 +206,32 @@ describe('POST /api/operator/resend', () => {
   it('403s without the Access identity header', async () => {
     const res = await postResend(req('https://x/api/operator/resend', { method: 'POST', withAccess: false, body: { token: 'x' } }) as never);
     expect(res.status).toBe(403);
+  });
+
+  it('503s when OP_STORE is not configured', async () => {
+    const res = await postResend(req('https://x/api/operator/resend', { method: 'POST', body: { token: 'x' }, env: {} }) as never);
+    expect(res.status).toBe(503);
+  });
+
+  it('503s when RESEND_TOKEN_SECRET is not configured', async () => {
+    const res = await postResend(req('https://x/api/operator/resend', { method: 'POST', body: { token: 'x' }, env: { OP_STORE: env.OP_STORE } }) as never);
+    expect(res.status).toBe(503);
+  });
+
+  it('400s on an unparseable body', async () => {
+    __setEnv(env as Record<string, unknown>);
+    const request = new Request('https://x/api/operator/resend', {
+      method: 'POST',
+      headers: { [ACCESS_HEADER]: OPERATOR_EMAIL, 'content-type': 'application/json' },
+      body: '{not-json',
+    });
+    const res = await postResend({ request } as never);
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects GET', async () => {
+    const res = await getResend({} as never);
+    expect(res.status).toBe(405);
   });
 
   it('authorizes a valid token once and reports the blocked dispatch', async () => {
