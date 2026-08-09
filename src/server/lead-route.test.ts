@@ -148,6 +148,19 @@ describe('POST /api/lead', () => {
     expect(res.status).toBe(503);
   });
 
+  it('redirects a native form submission to /contact/?lead=error when no runtime env is present', async () => {
+    __setEnv({});
+    const body = new URLSearchParams(validFormFields()).toString();
+    const request = new Request(ROUTE_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    const res = await POST({ request, clientAddress: '203.0.113.1' } as never);
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe('/contact/?lead=error');
+  });
+
   it('201s with channel=sms and enqueues exactly one queue message', async () => {
     const res = await POST(req(validBody()));
     const out = (await res.json()) as { outcome: string; channel: string; leadId: string };

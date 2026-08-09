@@ -85,6 +85,28 @@ describe('POST /api/quote', () => {
     expect(json.reason).toBe('missing_locator');
   });
 
+  it('honors an explicit serviceSlug instead of silently defaulting it', async () => {
+    // Explicit and default happen to be the same sample-priced service, but this
+    // exercises the `typeof body.serviceSlug === 'string'` true branch, which no
+    // other test in this file reaches (every other call omits serviceSlug).
+    const { status, json } = await call({ townSlug: 'huntington', band: 'medium', serviceSlug: 'roof-replacement' });
+    expect(status).toBe(200);
+    expect(json.outcome).toBe('estimate');
+  });
+
+  it('falls back to an empty body when the request has no content-type header at all', async () => {
+    __setEnv({});
+    const request = new Request('https://premiumroofsolutions.com/api/quote', { method: 'POST' });
+    expect(request.headers.get('content-type')).toBeNull();
+    const res = await POST({ request, clientAddress: '203.0.113.9' } as never);
+    const json = (await res.json()) as Record<string, unknown>;
+    // no content-type → the `?? ''` fallback feeds formData(), which throws on a
+    // bodyless request; parseBody's catch{} swallows it the same as malformed JSON.
+    expect(res.status).toBe(400);
+    expect(json.outcome).toBe('malformed');
+    expect(json.reason).toBe('missing_locator');
+  });
+
   it('429s past the per-IP cap once RATE_LIMIT_KV is bound', async () => {
     const data = new Map<string, string>();
     const kv = {
