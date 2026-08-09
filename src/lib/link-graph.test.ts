@@ -21,6 +21,16 @@ describe('extractInternalLinks', () => {
     `;
     expect(extractInternalLinks(html, 'example.com')).toEqual([]);
   });
+
+  it('ignores relative-to-current-doc paths (no leading slash, no protocol)', () => {
+    const html = `<a href="services/roof-repair/">Repair</a>`;
+    expect(extractInternalLinks(html, 'example.com')).toEqual([]);
+  });
+
+  it('ignores hrefs that fail URL parsing despite matching the absolute-URL prefix', () => {
+    const html = `<a href="https://">broken</a>`;
+    expect(extractInternalLinks(html, 'example.com')).toEqual([]);
+  });
 });
 
 describe('bfsDepths + findDepthViolations', () => {
