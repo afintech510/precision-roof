@@ -60,6 +60,26 @@ describe('bfsDepths + findDepthViolations', () => {
     expect(violations).toContainEqual({ pathname: '/orphan/', depth: Infinity });
   });
 
+  it('ignores links to pages outside the built set and does not revisit already-queued pages', () => {
+    const graph = {
+      // '/hub/' and '/b/' both link to '/shared/' (a revisit) and to
+      // '/not-built/', which never appears as a key in `graph`.
+      '/': ['/hub/', '/b/'],
+      '/hub/': ['/shared/', '/not-built/'],
+      '/b/': ['/shared/'],
+      '/shared/': [],
+    };
+    const depths = bfsDepths(graph, '/');
+    expect(depths['/shared/']).toBe(2); // reached once, via /hub/, not re-queued via /b/
+    expect(depths['/not-built/']).toBeUndefined(); // never counted — not a built page
+  });
+
+  it('treats a start page outside the built set as having no outbound links', () => {
+    const graph = { '/about/': [] };
+    const depths = bfsDepths(graph, '/missing-start/');
+    expect(depths).toEqual({ '/missing-start/': 0, '/about/': Infinity });
+  });
+
   it('flags pages deeper than maxDepth', () => {
     const graph = {
       '/': ['/a/'],

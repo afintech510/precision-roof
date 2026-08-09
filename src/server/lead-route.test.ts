@@ -196,6 +196,24 @@ describe('POST /api/lead', () => {
     expect(sent).toHaveLength(0);
   });
 
+  it('202s with channel=callback when SMS_AUTHORITY is unbound (DO not wired into the Worker yet)', async () => {
+    delete env.SMS_AUTHORITY;
+    const res = await POST(req(validBody()));
+    const out = (await res.json()) as { outcome: string; channel: string; reason: string };
+    expect(res.status).toBe(202);
+    expect(out).toMatchObject({ outcome: 'accepted', channel: 'callback', reason: 'budget_anomaly' });
+    expect(sent).toHaveLength(0);
+  });
+
+  it('never fails the request when SMS_QUEUE is unbound — the lead is still captured', async () => {
+    delete env.SMS_QUEUE;
+    const res = await POST(req(validBody()));
+    const out = (await res.json()) as { outcome: string; channel: string };
+    expect(res.status).toBe(201);
+    expect(out).toMatchObject({ outcome: 'created', channel: 'sms' });
+    expect(sent).toHaveLength(0); // nothing to assert on — there's no queue to capture the send
+  });
+
   it('400s on a malformed field', async () => {
     const res = await POST(req(validBody({ phoneE164: 'not-a-phone' })));
     const out = (await res.json()) as { outcome: string; field: string };
@@ -232,6 +250,18 @@ describe('POST /api/lead', () => {
     const res = await POST(nativeReq(validFormFields({ phoneE164: 'not-a-phone' })));
     expect(res.status).toBe(303);
     expect(res.headers.get('location')).toBe('/contact/?lead=malformed&field=phone');
+  });
+
+  it('falls back to an empty body when form-data parsing throws (malformed multipart)', async () => {
+    __setEnv(env as Record<string, unknown>);
+    const request = new Request(ROUTE_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'multipart/form-data; boundary=broken' },
+      body: 'not actually multipart data',
+    });
+    const res = await POST({ request, clientAddress: '203.0.113.1' } as never);
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe('/contact/?lead=malformed&field=name');
   });
 
   it('429s past the per-IP cap once RATE_LIMIT_KV is bound', async () => {

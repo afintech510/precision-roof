@@ -45,9 +45,19 @@ describe('KV read/write', () => {
     expect(await readPricingBlob(undefined)).toBeNull();
   });
 
+  it('returns null when the KV binding exists but the key is unset', async () => {
+    expect(await readPricingBlob(memKV())).toBeNull();
+  });
+
   it('returns null for a corrupt blob rather than throwing', async () => {
     const kv = memKV();
     kv.store.set(PRICING_BLOB_KEY, '{not json');
+    expect(await readPricingBlob(kv)).toBeNull();
+  });
+
+  it('returns null for valid JSON that is missing the expected blob shape', async () => {
+    const kv = memKV();
+    kv.store.set(PRICING_BLOB_KEY, JSON.stringify({ builtAt: 999 })); // no `ranges`
     expect(await readPricingBlob(kv)).toBeNull();
   });
 });
