@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { roofingContractor, breadcrumbs, serviceSchema, faqPage, aggregateRating } from './structured-data';
-import { sampleSite, sampleServices, sampleReviews } from './sample';
+import { roofingContractor, breadcrumbs, serviceSchema, faqPage, aggregateRating, articleSchema } from './structured-data';
+import { sampleSite, sampleServices, sampleReviews, samplePosts } from './sample';
 import type { Review } from './types';
 
 describe('structured data (JSON-LD)', () => {
@@ -28,6 +28,18 @@ describe('structured data (JSON-LD)', () => {
     const f = faqPage([{ question: 'Q?', answer: 'A.' }]);
     expect(f['@type']).toBe('FAQPage');
     expect(f.mainEntity[0].acceptedAnswer.text).toBe('A.');
+  });
+
+  it('builds a BlogPosting tied to the business and its resources URL', () => {
+    const post = samplePosts[0];
+    const a = articleSchema(post, sampleSite);
+    expect(a['@type']).toBe('BlogPosting');
+    expect(a.headline).toBe(post.title);
+    expect(a.description).toBe(post.excerpt);
+    expect(a.datePublished).toBe(post.publishedAt);
+    expect(a.author.name).toBe(sampleSite.businessName);
+    expect(a.publisher.name).toBe(sampleSite.businessName);
+    expect(a.mainEntityOfPage).toBe(`https://premiumroofsolutions.com/resources/${post.slug}/`);
   });
 
   describe('aggregateRating', () => {
