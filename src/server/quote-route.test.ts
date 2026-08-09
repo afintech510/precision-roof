@@ -54,6 +54,37 @@ describe('POST /api/quote', () => {
     expect(res.status).toBe(405);
   });
 
+  it('parses a form-encoded body (non-JSON content-type)', async () => {
+    __setEnv({});
+    const form = new URLSearchParams({ townSlug: 'huntington', band: 'medium' });
+    const request = new Request('https://premiumroofsolutions.com/api/quote', {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: form.toString(),
+    });
+    const res = await POST({ request, clientAddress: '203.0.113.9' } as never);
+    const json = (await res.json()) as Record<string, unknown>;
+    expect(res.status).toBe(200);
+    expect(json.outcome).toBe('estimate');
+  });
+
+  it('falls back to an empty body when parsing throws (unreadable stream)', async () => {
+    __setEnv({});
+    const request = new Request('https://premiumroofsolutions.com/api/quote', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{not valid json',
+    });
+    const res = await POST({ request, clientAddress: '203.0.113.9' } as never);
+    const json = (await res.json()) as Record<string, unknown>;
+    // empty body → no zip/townSlug → the quote engine's own missing_locator path
+    // decides, proving parseBody's catch{} swallowed the JSON parse error
+    // instead of throwing out of the route.
+    expect(res.status).toBe(400);
+    expect(json.outcome).toBe('malformed');
+    expect(json.reason).toBe('missing_locator');
+  });
+
   it('429s past the per-IP cap once RATE_LIMIT_KV is bound', async () => {
     const data = new Map<string, string>();
     const kv = {
