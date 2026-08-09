@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -26,6 +26,7 @@ function nodeExecutor(db: InstanceType<typeof DatabaseSync>): SqlExecutor {
   };
 }
 
+let db: InstanceType<typeof DatabaseSync>;
 let repos: ReturnType<typeof createRepositories>;
 let smsSent: string[];
 let emailsSent: string[];
@@ -55,7 +56,7 @@ function deps(overrides: Partial<ReviewRequestSweepDeps> = {}): ReviewRequestSwe
 }
 
 beforeEach(() => {
-  const db = new DatabaseSync(':memory:');
+  db = new DatabaseSync(':memory:');
   db.exec(UP);
   repos = createRepositories(nodeExecutor(db));
   smsSent = [];
@@ -114,5 +115,55 @@ describe('runReviewRequestSweep', () => {
     await repos.reviewRequest.createPending({ id: 'r1', jobId: 'job1', customerContact: '+15165550100', channel: 'sms', requestedAt: 1 });
     const result = await runReviewRequestSweep(repos, deps());
     expect(result.sent).toBe(1); // fires regardless of any job satisfaction field — none is even read here
+  });
+
+  it('loses the markSuppressed CAS race to a concurrent sweep — does not double-count', async () => {
+    await repos.suppression.suppress('sms', '+15165550100', 0, 'STOP');
+    await repos.reviewRequest.createPending({ id: 'r1', jobId: 'job1', customerContact: '+15165550100', channel: 'sms', requestedAt: 1 });
+
+    const markSuppressedSpy = vi
+      .spyOn(repos.reviewRequest, 'markSuppressed')
+      .mockImplementationOnce(async (id: string) => {
+        // Simulate another sweep instance resolving this row first — the CAS's
+        // WHERE status = 'pending' now matches nothing.
+        db.prepare(`UPDATE review_request SET status = 'sent' WHERE id = ?`).run(id);
+        return false;
+      });
+
+    const result = await runReviewRequestSweep(repos, deps());
+
+    expect(markSuppressedSpy).toHaveBeenCalledWith('r1');
+    expect(result).toEqual({ swept: 1, sent: 0, suppressed: 0, failed: 0 });
+    expect(smsSent).toEqual([]); // suppression still short-circuited the send
+  });
+
+  it('loses the markSent CAS race to a concurrent sweep — does not double-count', async () => {
+    await repos.reviewRequest.createPending({ id: 'r1', jobId: 'job1', customerContact: '+15165550100', channel: 'sms', requestedAt: 1 });
+
+    const markSentSpy = vi.spyOn(repos.reviewRequest, 'markSent').mockImplementationOnce(async (id: string) => {
+      db.prepare(`UPDATE review_request SET status = 'failed' WHERE id = ?`).run(id);
+      return false;
+    });
+
+    const result = await runReviewRequestSweep(repos, deps());
+
+    expect(markSentSpy).toHaveBeenCalledWith('r1', 1000);
+    expect(result).toEqual({ swept: 1, sent: 0, suppressed: 0, failed: 0 });
+    expect(smsSent).toEqual(['+15165550100']); // the send itself did happen
+  });
+
+  it('loses the markFailed CAS race to a concurrent sweep — does not double-count', async () => {
+    smsShouldFail = true;
+    await repos.reviewRequest.createPending({ id: 'r1', jobId: 'job1', customerContact: '+15165550100', channel: 'sms', requestedAt: 1 });
+
+    const markFailedSpy = vi.spyOn(repos.reviewRequest, 'markFailed').mockImplementationOnce(async (id: string) => {
+      db.prepare(`UPDATE review_request SET status = 'sent' WHERE id = ?`).run(id);
+      return false;
+    });
+
+    const result = await runReviewRequestSweep(repos, deps());
+
+    expect(markFailedSpy).toHaveBeenCalledWith('r1');
+    expect(result).toEqual({ swept: 1, sent: 0, suppressed: 0, failed: 0 });
   });
 });
