@@ -28,4 +28,19 @@ describe('§771-B compliance lint', () => {
   it('assertClean is silent on clean content', () => {
     expect(() => assertClean([{ where: 'home', content: 'Transparent, itemized pricing.' }])).not.toThrow();
   });
+
+  it('treats missing content (null/undefined) as clean rather than crashing', () => {
+    expect(lint(null)).toEqual([]);
+    expect(lint(undefined)).toEqual([]);
+    expect(() => assertClean([{ where: 'town:riverhead.body', content: undefined }])).not.toThrow();
+  });
+
+  it('tolerates Portable Text blocks with no children and spans with no text', () => {
+    const blocks = [
+      { _type: 'block' },
+      { _type: 'block', children: [{}, { text: 'No money down for qualified buyers.' }] },
+    ];
+    const findings = lint(blocks);
+    expect(findings.map((f) => f.id)).toEqual(['no-money-down']);
+  });
 });
