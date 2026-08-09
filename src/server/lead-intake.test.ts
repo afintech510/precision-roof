@@ -208,3 +208,98 @@ describe('handleLeadIntake — malformed input', () => {
 it('the East-End gate table used matches the production SUFFOLK_ZIP_GATE default', () => {
   expect(SUFFOLK_ZIP_GATE['11968']).toBeDefined();
 });
+
+describe('handleLeadIntake — non-string field types', () => {
+  it('400s when phone is not a string', async () => {
+    const res = await handleLeadIntake(validReq({ phoneE164: 15165550100 }), repos, {}, deps());
+    expect(res).toEqual({ outcome: 'malformed', status: 400, field: 'phone' });
+  });
+
+  it('400s when name is not a string', async () => {
+    const res = await handleLeadIntake(validReq({ name: 12345 }), repos, {}, deps());
+    expect(res).toEqual({ outcome: 'malformed', status: 400, field: 'name' });
+  });
+
+  it('400s when email is present but not a string', async () => {
+    const res = await handleLeadIntake(validReq({ email: 12345 }), repos, {}, deps());
+    expect(res).toEqual({ outcome: 'malformed', status: 400, field: 'email' });
+  });
+
+  it('accepts an omitted email as no-email-provided rather than malformed', async () => {
+    const res = await handleLeadIntake(validReq({ email: undefined }), repos, {}, deps());
+    expect(res.outcome).not.toBe('malformed');
+    const lead = await repos.lead.getById('id-1');
+    expect(lead?.email).toBeNull();
+  });
+});
+
+describe('handleLeadIntake — consent version default', () => {
+  it('defaults an omitted consentVersion to CURRENT_CONSENT_VERSION rather than 400ing', async () => {
+    const res = await handleLeadIntake(validReq({ consentVersion: undefined }), repos, {}, deps());
+    expect(res.outcome).not.toBe('malformed');
+
+    const row = db.prepare('SELECT consent_version FROM consent_record WHERE lead_id = ?').get('id-1') as {
+      consent_version: string;
+    };
+    expect(row.consent_version).toBe(CURRENT_CONSENT_VERSION);
+  });
+});
+
+describe('handleLeadIntake — missing consent metadata falls back to null', () => {
+  const noMeta = { ip: undefined, userAgent: undefined, sourceUrl: undefined };
+
+  it('east-end gate path: stores null consent_ip/ua/source_url when deps omit them', async () => {
+    const res = await handleLeadIntake(
+      validReq({ zip: '11968' }), // Southampton — gated
+      repos, {}, deps(noMeta),
+    );
+    expect(res.outcome).toBe('accepted');
+
+    const lead = await repos.lead.getById('id-1');
+    expect(lead?.consent_ip).toBeNull();
+    expect(lead?.consent_ua).toBeNull();
+    expect(lead?.consent_source_url).toBeNull();
+    const consentRow = db.prepare(
+      'SELECT consent_ip, consent_ua, consent_source_url FROM consent_record WHERE lead_id = ?',
+    ).get('id-1') as { consent_ip: string | null; consent_ua: string | null; consent_source_url: string | null };
+    expect(consentRow).toEqual({ consent_ip: null, consent_ua: null, consent_source_url: null });
+  });
+
+  it('turnstile-fallback path: stores null consent_ip/ua/source_url when deps omit them', async () => {
+    const res = await handleLeadIntake(
+      validReq(), repos, {}, deps({ turnstileVerified: false, ...noMeta }),
+    );
+    expect(res.outcome).toBe('accepted');
+
+    const lead = await repos.lead.getById('id-1');
+    expect(lead?.consent_ip).toBeNull();
+    expect(lead?.consent_ua).toBeNull();
+    expect(lead?.consent_source_url).toBeNull();
+  });
+
+  it('advertising-eligible path: stores null consent_ip/ua/source_url when deps omit them', async () => {
+    const res = await handleLeadIntake(validReq(), repos, {}, deps(noMeta));
+    expect(res.outcome).toBe('created');
+
+    const lead = await repos.lead.getById('id-1');
+    expect(lead?.consent_ip).toBeNull();
+    expect(lead?.consent_ua).toBeNull();
+    expect(lead?.consent_source_url).toBeNull();
+  });
+});
+
+describe('handleLeadIntake — optional gaClientId', () => {
+  it('stores null when gaClientId is omitted', async () => {
+    const res = await handleLeadIntake(validReq({ gaClientId: undefined }), repos, {}, deps());
+    expect(res.outcome).not.toBe('malformed');
+    const lead = await repos.lead.getById('id-1');
+    expect(lead?.ga_client_id).toBeNull();
+  });
+
+  it('stores null when gaClientId is present but not a string', async () => {
+    const res = await handleLeadIntake(validReq({ gaClientId: 42 }), repos, {}, deps());
+    expect(res.outcome).not.toBe('malformed');
+    const lead = await repos.lead.getById('id-1');
+    expect(lead?.ga_client_id).toBeNull();
+  });
+});
