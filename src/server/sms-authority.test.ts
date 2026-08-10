@@ -7,6 +7,7 @@ import {
   claimSmsSend,
   setBudgetOverride,
   PHONE_WINDOW_MS,
+  RESERVATION_TTL_MS,
   type SmsAuthorityDeps,
 } from './sms-authority';
 
@@ -135,18 +136,33 @@ describe('claimSmsSend', () => {
   });
 
   it('queue-consumer and slo-sweep racing the same claim yield exactly one allow', async () => {
+    // Genuinely concurrent (Promise.all, not sequential awaits): both calls'
+    // reads of allow_token must land before either's write, so the loser
+    // takes the claim.changes !== 1 path (not the row.consumed_at !== null
+    // early-return, which a sequential pair of awaits would hit instead).
     await reserveSmsSend({ phoneE164: '+15165550100', leadId: 'lead-1' }, storage, deps(1_000));
-    const [a, b] = [
-      await claimSmsSend({ leadId: 'lead-1', phoneE164: '+15165550100' }, storage, deps(2_000)),
-      await claimSmsSend({ leadId: 'lead-1', phoneE164: '+15165550100' }, storage, deps(2_000)),
-    ];
+    const [a, b] = await Promise.all([
+      claimSmsSend({ leadId: 'lead-1', phoneE164: '+15165550100' }, storage, deps(2_000)),
+      claimSmsSend({ leadId: 'lead-1', phoneE164: '+15165550100' }, storage, deps(2_000)),
+    ]);
     const allowed = [a, b].filter((r) => r.allow);
     expect(allowed).toHaveLength(1);
+    expect([a, b]).toContainEqual({ allow: false, reason: 'already_sent' });
   });
 
   it('denies when the phone on the claim does not match the reservation', async () => {
     await reserveSmsSend({ phoneE164: '+15165550100', leadId: 'lead-1' }, storage, deps(1_000));
     const r = await claimSmsSend({ leadId: 'lead-1', phoneE164: '+15165550199' }, storage, deps(1_100));
+    expect(r).toEqual({ allow: false, reason: 'no_reservation' });
+  });
+
+  it('denies with no_reservation when the claim arrives after the reservation TTL has expired', async () => {
+    await reserveSmsSend({ phoneE164: '+15165550100', leadId: 'lead-1' }, storage, deps(1_000));
+    const r = await claimSmsSend(
+      { leadId: 'lead-1', phoneE164: '+15165550100' },
+      storage,
+      deps(1_000 + RESERVATION_TTL_MS + 1),
+    );
     expect(r).toEqual({ allow: false, reason: 'no_reservation' });
   });
 });
