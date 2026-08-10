@@ -28,6 +28,25 @@ function nodeExecutor(db: InstanceType<typeof DatabaseSync>): SqlExecutor {
   };
 }
 
+/** Mirrors the module's private base64url/HMAC helpers, so tests can forge
+ * correctly-signed-but-malformed-payload tokens without exporting internals. */
+function b64url(bytes: Uint8Array): string {
+  let s = '';
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function sign(secret: string, message: string): Promise<Uint8Array> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  return new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message)));
+}
+
 let db: InstanceType<typeof DatabaseSync>;
 let repos: ReturnType<typeof createRepositories>;
 let ids: number;
@@ -113,6 +132,20 @@ describe('resend token — mint & verify (side-effect free)', () => {
     expect(await verifyResendToken('', SECRET, 1)).toEqual({ ok: false, reason: 'malformed' });
     expect(await verifyResendToken(undefined, SECRET, 1)).toEqual({ ok: false, reason: 'malformed' });
     expect(await verifyResendToken('!!!.@@@', SECRET, 1)).toEqual({ ok: false, reason: 'malformed' });
+  });
+
+  it('rejects a correctly-signed payload that does not decode to JSON', async () => {
+    const payload = b64url(new TextEncoder().encode('not-json'));
+    const sig = b64url(await sign(SECRET, payload));
+    const v = await verifyResendToken(`${payload}.${sig}`, SECRET, 1);
+    expect(v).toEqual({ ok: false, reason: 'malformed' });
+  });
+
+  it('rejects a correctly-signed JSON payload with the wrong claims shape', async () => {
+    const payload = b64url(new TextEncoder().encode(JSON.stringify({ jti: 'jti-1', leadId: 'lead-1' })));
+    const sig = b64url(await sign(SECRET, payload));
+    const v = await verifyResendToken(`${payload}.${sig}`, SECRET, 1);
+    expect(v).toEqual({ ok: false, reason: 'malformed' });
   });
 
   it('verify does NOT consume the token (safe for the GET confirm page)', async () => {
