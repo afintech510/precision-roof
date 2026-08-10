@@ -10,6 +10,14 @@ describe('structured data (JSON-LD)', () => {
     expect(s.name).toBe(sampleSite.businessName);
     expect(s.telephone).toBe(sampleSite.phoneHref.replace('tel:', ''));
     expect(s.identifier).toBe(sampleSite.licenseNumber);
+    expect(s).toHaveProperty('hasCredential', sampleSite.dcaVerifyUrl);
+  });
+
+  it('omits hasCredential when the site has no DCA verify URL', () => {
+    const siteWithoutDca = { ...sampleSite };
+    delete siteWithoutDca.dcaVerifyUrl;
+    const s = roofingContractor(siteWithoutDca);
+    expect(s).not.toHaveProperty('hasCredential');
   });
 
   it('numbers breadcrumb positions from 1 with absolute URLs', () => {

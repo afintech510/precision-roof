@@ -85,6 +85,12 @@ describe('audited PII reads', () => {
     expect(accessRows()).toHaveLength(0);
   });
 
+  it('logs ip: null when the operator context carries no ip', async () => {
+    const lead = await viewLead(repos, { operatorId: 'op-adam' }, 'lead-1', deps());
+    expect(lead?.name).toBe('Pat Doe');
+    expect(accessRows()[0]).toMatchObject({ operator_id: 'op-adam', ip: null });
+  });
+
   it('failed-send queue logs one access row per lead returned', async () => {
     await repos.lead.insert({ id: 'lead-2', createdAt: 2, name: 'Sam Roe', phoneE164: '+15165550111', zip: '11787', service: 'roof-replacement', status: 'failed_followup' });
     await repos.lead.insert({ id: 'lead-3', createdAt: 3, name: 'Lee Poe', phoneE164: '+15165550122', zip: '11704', service: 'roof-leak-repair', status: 'failed_followup' });

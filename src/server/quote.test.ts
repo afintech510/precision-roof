@@ -52,6 +52,21 @@ describe('computeQuote — estimate path', () => {
     expect(r.estimate?.provisional).toBe(true);
     expect(r.disclosure).toMatch(/provisional/i);
   });
+
+  it('estimate via a ZIP-resolved town slug absent from ctx.towns omits the town name', () => {
+    // The gate table (ZIP → town slugs) is independent of ctx.towns, unlike the
+    // townSlug path where the slug is only ever taken from ctx.towns itself.
+    const gateTable: ZipGateTable = { '11701': [{ townSlug: 'bayshore', advertisingAllowed: true }] };
+    const blobWithUnlisted: PricingBlob = {
+      builtAt: 1,
+      ranges: { [blobKey('bayshore', 'roof-replacement', 'medium')]: { low: 15000, high: 25000 } },
+    };
+    const ctxUnlisted: QuoteContext = { blob: blobWithUnlisted, towns, gateTable };
+    const r = computeQuote({ zip: '11701', serviceSlug: 'roof-replacement', band: 'medium' }, ctxUnlisted);
+    expect(r.outcome).toBe('estimate');
+    expect(r.estimate).toEqual({ low: 15000, high: 25000, band: 'medium', provisional: false });
+    expect(r.town).toBeUndefined();
+  });
 });
 
 describe('computeQuote — East-End gate (never a price)', () => {
