@@ -41,4 +41,12 @@ describe('pricing coverage', () => {
     const gaps = findCoverageGaps(towns, services, pricing, opts);
     expect(gaps.some((g) => g.townSlug === 'southampton')).toBe(false);
   });
+
+  it('defaults stalenessYears to 2 when omitted', () => {
+    const { stalenessYears, ...optsWithoutStaleness } = opts;
+    void stalenessYears;
+    const pricing = [row({ homeSizeBand: 'small' }), row({ homeSizeBand: 'large', effectiveYear: 2023 })];
+    const gaps = findCoverageGaps(towns, services, pricing, optsWithoutStaleness);
+    expect(gaps).toContainEqual({ townSlug: 'huntington', serviceSlug: 'roof-replacement', band: 'large', reason: 'stale' });
+  });
 });

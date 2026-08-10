@@ -27,9 +27,10 @@ function nodeExecutor(db: InstanceType<typeof DatabaseSync>): SqlExecutor {
 }
 
 let repos: ReturnType<typeof createRepositories>;
+let db: InstanceType<typeof DatabaseSync>;
 
 beforeEach(() => {
-  const db = new DatabaseSync(':memory:');
+  db = new DatabaseSync(':memory:');
   db.exec(UP);
   repos = createRepositories(nodeExecutor(db));
 });
@@ -139,5 +140,37 @@ describe('reviewRequestRepo — send once', () => {
     await repos.reviewRequest.markSent('r6', 40);
     const rows = await repos.reviewRequest.listPending(10);
     expect(rows.map((r) => r.id)).toEqual(['r5', 'r4']);
+  });
+});
+
+describe('operatorAccessLogRepo — audited PII reads [C2-027]', () => {
+  it('records leadId and ip when provided', async () => {
+    await repos.operatorAccessLog.log({
+      id: 'log1',
+      operatorId: 'op1',
+      action: 'view_lead',
+      leadId: 'lead1',
+      accessedAt: 500,
+      ip: '203.0.113.4',
+    });
+    const row = db.prepare('SELECT lead_id, ip FROM operator_access_log WHERE id = ?').get('log1') as
+      | { lead_id: string | null; ip: string | null }
+      | undefined;
+    expect(row?.lead_id).toBe('lead1');
+    expect(row?.ip).toBe('203.0.113.4');
+  });
+
+  it('falls back to null when leadId/ip are omitted', async () => {
+    await repos.operatorAccessLog.log({
+      id: 'log2',
+      operatorId: 'op1',
+      action: 'view_failed_sends',
+      accessedAt: 600,
+    });
+    const row = db.prepare('SELECT lead_id, ip FROM operator_access_log WHERE id = ?').get('log2') as
+      | { lead_id: string | null; ip: string | null }
+      | undefined;
+    expect(row?.lead_id).toBeNull();
+    expect(row?.ip).toBeNull();
   });
 });

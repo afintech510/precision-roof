@@ -25,6 +25,16 @@ describe('§771-B compliance lint', () => {
       .toThrow(/§771-B content lint failed/);
   });
 
+  it('falls back to "?" in the report when a finding has no where locator', () => {
+    // assertClean's own type requires `where: string`, but the report still
+    // needs to degrade gracefully if a caller's locator resolves empty.
+    const items = [{ content: 'Guaranteed approval for everyone.' }] as unknown as Array<{
+      where: string;
+      content: string;
+    }>;
+    expect(() => assertClean(items)).toThrow(/in \? —/);
+  });
+
   it('assertClean is silent on clean content', () => {
     expect(() => assertClean([{ where: 'home', content: 'Transparent, itemized pricing.' }])).not.toThrow();
   });
