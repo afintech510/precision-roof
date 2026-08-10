@@ -112,6 +112,16 @@ describe('POST /api/webhooks/twilio', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400s on a validly signed body missing MessageSid entirely', async () => {
+    const res = await POST(await ctx({ MessageStatus: 'sent' }));
+    expect(res.status).toBe(400);
+  });
+
+  it('forwards a numeric ErrorCode from the status callback', async () => {
+    const res = await POST(await ctx({ MessageSid: 'SM5', MessageStatus: 'failed', ErrorCode: '30007' }));
+    expect(res.status).toBe(200);
+  });
+
   it('rejects GET', async () => {
     const res = await GET({} as never);
     expect(res.status).toBe(405);

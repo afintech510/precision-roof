@@ -128,6 +128,28 @@ describe('POST /api/webhooks/callrail', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400s on validly-parsed JSON missing an id', async () => {
+    const body = JSON.stringify({ answered: false, direction: 'inbound' });
+    const sig = await computeCallrailSignature(SECRET, body);
+    const res = await POST(ctx(body, { signature: sig }));
+    expect(res.status).toBe(400);
+  });
+
+  it('never enqueues when SMS_QUEUE is not yet bound, even when the DO allows', async () => {
+    const body = missedCallBody();
+    const sig = await computeCallrailSignature(SECRET, body);
+    env = {
+      OP_STORE: fakeD1(db),
+      CALLRAIL_WEBHOOK_SECRET: SECRET,
+      SMS_AUTHORITY: fakeSmsAuthority({ allow: true, token: 'tok-1' }),
+    };
+    const res = await POST(ctx(body, { signature: sig }));
+    const out = (await res.json()) as Record<string, unknown>;
+    expect(res.status).toBe(200);
+    expect(out).toMatchObject({ processed: true, textedBack: true });
+    expect(sent).toHaveLength(0);
+  });
+
   it('texts back a validly signed missed call via the SMS_AUTHORITY + SMS_QUEUE bindings', async () => {
     const body = missedCallBody();
     const sig = await computeCallrailSignature(SECRET, body);

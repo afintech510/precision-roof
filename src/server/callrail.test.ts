@@ -103,6 +103,12 @@ describe('CallRail missed-call text-back', () => {
     expect(reserveCalls).toBe(0);
   });
 
+  it('rejects a missing caller number without reserving', async () => {
+    const result = await handleCallrailMissedCall(missedCall({ customer_phone_number: undefined }), repos, deps());
+    expect(result).toEqual({ processed: true, textedBack: false, reason: 'malformed_phone' });
+    expect(reserveCalls).toBe(0);
+  });
+
   it('honors a DO deny (e.g. suppressed) without enqueuing', async () => {
     reserveResult = { allow: false, reason: 'suppressed' };
     const result = await handleCallrailMissedCall(missedCall(), repos, deps());

@@ -47,6 +47,17 @@ describe('Twilio status callbacks', () => {
     const row = await repos.messageLog.getByProviderId('SM1');
     expect(row?.status).toBe('failed_permanent');
   });
+
+  it('keeps the raw status when an errorCode arrives on a non-terminal status', async () => {
+    await handleTwilioStatus({ messageSid: 'SM1', messageStatus: 'delivered', errorCode: 30007 }, repos, deps);
+    const row = await repos.messageLog.getByProviderId('SM1');
+    expect(row?.status).toBe('delivered');
+  });
+
+  it('falls back to rank 0 for a status Twilio sends that is outside the known set', async () => {
+    const result = await handleTwilioStatus({ messageSid: 'SM1', messageStatus: 'accepted' }, repos, deps);
+    expect(result.processed).toBe(true);
+  });
 });
 
 describe('Twilio inbound STOP/START', () => {

@@ -124,6 +124,13 @@ describe('POST /api/webhooks/calcom', () => {
     expect(res.status).toBe(400);
   });
 
+  it('400s on validly-parsed JSON missing triggerEvent/payload.uid', async () => {
+    const body = JSON.stringify({ triggerEvent: 'BOOKING_CREATED', payload: {} });
+    const sig = await computeCalcomSignature(SECRET, body);
+    const res = await POST(ctx(body, { signature: sig }));
+    expect(res.status).toBe(400);
+  });
+
   it('rejects GET', async () => {
     const res = await GET({} as never);
     expect(res.status).toBe(405);
