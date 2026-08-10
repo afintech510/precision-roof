@@ -264,6 +264,31 @@ describe('POST /api/lead', () => {
     expect(res.headers.get('location')).toBe('/contact/?lead=malformed&field=name');
   });
 
+  it('treats a request with no content-type header at all as a native submission (redirect, not JSON)', async () => {
+    __setEnv(env as Record<string, unknown>);
+    // No body and no explicit header: fetch does not auto-populate
+    // content-type, so headers.get('content-type') is genuinely null here,
+    // exercising isNativeFormSubmission/parseBody's `?? ''` fallback.
+    const request = new Request(ROUTE_URL, { method: 'POST' });
+    expect(request.headers.get('content-type')).toBeNull();
+    const res = await POST({ request, clientAddress: '203.0.113.1' } as never);
+    expect(res.status).toBe(303);
+    expect(res.headers.get('location')).toBe('/contact/?lead=malformed&field=name');
+  });
+
+  it('stores a null consent_ip when the platform does not supply clientAddress', async () => {
+    __setEnv(env as Record<string, unknown>);
+    const request = new Request(ROUTE_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(validBody()),
+    });
+    const res = await POST({ request, clientAddress: undefined } as never);
+    expect(res.status).toBe(201);
+    const row = db.prepare('SELECT consent_ip FROM consent_record').get() as { consent_ip: string | null };
+    expect(row.consent_ip).toBeNull();
+  });
+
   it('429s past the per-IP cap once RATE_LIMIT_KV is bound', async () => {
     env.RATE_LIMIT_KV = fakeKv();
     for (let i = 0; i < 5; i++) {

@@ -63,9 +63,9 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
   const body = await parseBody(request);
   const turnstile = await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstileToken, clientAddress);
 
-  // The DO isn't wired into a deployed Worker yet (see wrangler.toml). Denying
-  // as a transient reason — never suppresses the lead, never blocks capture —
-  // means slo-sweep picks it right back up once the binding exists.
+  // Denying with a transient reason when the binding is absent (e.g. local
+  // dev without Miniflare bindings) never suppresses the lead, never blocks
+  // capture — slo-sweep picks it right back up once SMS_AUTHORITY resolves.
   const reserveSms = async (phoneE164: string, leadId: string): Promise<ReserveOutcome> => {
     if (!env.SMS_AUTHORITY) return { allow: false, reason: 'budget_anomaly' };
     const stub = env.SMS_AUTHORITY.get(env.SMS_AUTHORITY.idFromName('global'));
