@@ -55,6 +55,13 @@ describe('checkRateLimit', () => {
     expect(nextWindow.allowed).toBe(true);
   });
 
+  it('treats a non-numeric stored value as zero rather than propagating NaN', async () => {
+    const store = fakeStore();
+    store.data.set('k:0', 'not-a-number');
+    const result = await checkRateLimit(store, 'k', { windowMs, max: 3, now: 0 });
+    expect(result).toEqual({ allowed: true, limit: 3, remaining: 2, resetAt: windowMs });
+  });
+
   it('keeps distinct keys independent', async () => {
     const store = fakeStore();
     await checkRateLimit(store, 'a', { windowMs, max: 1, now: 0 });

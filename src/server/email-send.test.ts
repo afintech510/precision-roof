@@ -71,4 +71,16 @@ describe('postmarkSender', () => {
     const result = await send(MSG);
     expect(result).toEqual({ ok: false, message: 'network down' });
   });
+
+  it('falls back to a generic message when a non-Error value is thrown', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw 'connection reset';
+      }),
+    );
+    const send = postmarkSender({ serverToken: 'tok-abc', fromAddress: 'reviews@example.com' });
+    const result = await send(MSG);
+    expect(result).toEqual({ ok: false, message: 'network_error' });
+  });
 });

@@ -54,4 +54,16 @@ describe('twilioSender', () => {
     const result = await send('+15559876543', 'hello');
     expect(result).toEqual({ ok: false, message: 'network down' });
   });
+
+  it('falls back to a generic message when a non-Error value is thrown', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw 'connection reset';
+      }),
+    );
+    const send = twilioSender({ accountSid: 'AC123', authToken: 'tok-abc', fromNumber: '+15551234567' });
+    const result = await send('+15559876543', 'hello');
+    expect(result).toEqual({ ok: false, message: 'network_error' });
+  });
 });
