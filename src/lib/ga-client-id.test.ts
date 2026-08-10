@@ -30,4 +30,9 @@ describe('parseGaClientId', () => {
     expect(parseGaClientId('_ga=not-a-real-value')).toBeUndefined();
     expect(parseGaClientId('_ga=GA1.2.onlyone')).toBeUndefined();
   });
+
+  it('returns undefined when the trailing two segments are not both numeric', () => {
+    expect(parseGaClientId('_ga=GA1.2.abc.987654321')).toBeUndefined();
+    expect(parseGaClientId('_ga=GA1.2.123456789.abc')).toBeUndefined();
+  });
 });

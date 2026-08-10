@@ -128,6 +128,13 @@ describe('GET /api/operator/leads/:id', () => {
     expect((rows[0] as { n: number }).n).toBe(0);
   });
 
+  it('400s for a missing or empty :id param', async () => {
+    const missing = await getLead({ ...req('https://x/api/operator/leads/'), params: {}, clientAddress: '203.0.113.1' } as never);
+    expect(missing.status).toBe(400);
+    const empty = await getLead({ ...req('https://x/api/operator/leads/'), params: { id: '' }, clientAddress: '203.0.113.1' } as never);
+    expect(empty.status).toBe(400);
+  });
+
   it('rejects POST', async () => {
     const res = await postLead({} as never);
     expect(res.status).toBe(405);

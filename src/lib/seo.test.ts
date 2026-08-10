@@ -60,4 +60,16 @@ describe('groupBySitemapCategory', () => {
     expect(groups.core).toEqual([`${site}/`, `${site}/about/`]);
     expect(groups.posts).toEqual([]);
   });
+
+  it('falls back to a bare "/" pathname when a URL exactly equals siteUrl (no trailing slash)', () => {
+    const site = 'https://premiumroofsolutions.com';
+    const groups = groupBySitemapCategory([site], site);
+    expect(groups.core).toEqual([site]);
+  });
+
+  it('parses the pathname from URLs that do not start with siteUrl', () => {
+    const site = 'https://premiumroofsolutions.com';
+    const groups = groupBySitemapCategory(['https://cdn.premiumroofsolutions.com/areas/huntington/'], site);
+    expect(groups.towns).toEqual(['https://cdn.premiumroofsolutions.com/areas/huntington/']);
+  });
 });
