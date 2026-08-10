@@ -21,6 +21,7 @@ function nodeExecutor(db: InstanceType<typeof DatabaseSync>): SqlExecutor {
 }
 
 let repos: ReturnType<typeof createRepositories>;
+let db: InstanceType<typeof DatabaseSync>;
 
 const bounce = (over: Partial<PostmarkWebhookEvent> = {}): PostmarkWebhookEvent => ({
   RecordType: 'Bounce',
@@ -32,7 +33,7 @@ const bounce = (over: Partial<PostmarkWebhookEvent> = {}): PostmarkWebhookEvent 
 });
 
 beforeEach(() => {
-  const db = new DatabaseSync(':memory:');
+  db = new DatabaseSync(':memory:');
   for (const m of MIGRATIONS) db.exec(m);
   repos = createRepositories(nodeExecutor(db));
 });
@@ -67,6 +68,16 @@ describe('Postmark bounce/complaint webhook', () => {
     await handlePostmarkWebhook(bounce(), repos, { now: 10_000 });
     const second = await handlePostmarkWebhook(bounce(), repos, { now: 20_000 });
     expect(second).toEqual({ processed: false });
+  });
+
+  it('falls back to RecordType for the recorded reason when Postmark omits Type', async () => {
+    const event = bounce({ Type: undefined });
+    const result = await handlePostmarkWebhook(event, repos, { now: 10_000 });
+    expect(result).toEqual({ processed: true, suppressed: true });
+    const row = db
+      .prepare(`SELECT keyword_matched FROM suppression WHERE channel = 'email' AND contact = ?`)
+      .get('customer@example.com') as { keyword_matched: string };
+    expect(row.keyword_matched).toBe('Bounce');
   });
 
   it('a later hard bounce still suppresses even if an earlier soft bounce for the same address did not', async () => {
