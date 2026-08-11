@@ -80,6 +80,14 @@ describe('bfsDepths + findDepthViolations', () => {
     expect(depths).toEqual({ '/missing-start/': 0, '/about/': Infinity });
   });
 
+  it('skips a falsy queue entry rather than treating it as unreachable', () => {
+    // An empty-string `start` is itself falsy, so the queue's own start entry
+    // exercises the `if (!current) continue` guard.
+    const graph = { '/about/': [] };
+    const depths = bfsDepths(graph, '');
+    expect(depths).toEqual({ '': 0, '/about/': Infinity });
+  });
+
   it('flags pages deeper than maxDepth', () => {
     const graph = {
       '/': ['/a/'],

@@ -125,4 +125,17 @@ describe('getPricingRows', () => {
     });
     expect(huntingtonSmall).not.toHaveProperty('provisional');
   });
+
+  it('marks a row provisional when the source band is provisional', async () => {
+    const town = sample.sampleTowns.find((t) => t.advertisingAllowed && t.pricing.length > 0)!;
+    const band = town.pricing[0];
+    band.provisional = true;
+    try {
+      const rows = await getPricingRows();
+      const row = rows.find((r) => r.townSlug === town.slug && r.band === band.band);
+      expect(row).toMatchObject({ provisional: true });
+    } finally {
+      band.provisional = undefined;
+    }
+  });
 });
